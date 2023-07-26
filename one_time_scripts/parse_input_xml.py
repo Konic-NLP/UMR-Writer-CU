@@ -43,13 +43,14 @@ def amr_text2html(plain_text: str) -> str:
     html_string = '<div id="amr">' + html_string + '</div>\n'
     return html_string
 
-def process_exported_file_isi_editor(content_string: str) -> Tuple[str, List[List[str]], List[str]]:
+def process_exported_file_isi_editor(content_string: str) -> Tuple[str, List[List[str]], List[str],List[str]]:
     """
     example file: /Users/jinzhao/schoolwork/lab-work/umr_annot_tool_resources/people/kristin/events37.xml
     """
     doc_content_string = ""
     sents = []
     sent_annots = []
+    doc_annots = []
     root = ET.fromstring(content_string)
     for child in root:
         if child.tag =='sntamr':
@@ -57,12 +58,16 @@ def process_exported_file_isi_editor(content_string: str) -> Tuple[str, List[Lis
                 if child2.tag == 'amr':
                     amr = regex.sub(r'(\()([a-z][0-9]? /)', rf'\1s{str(len(sent_annots)+1)}\2', child2.text)
                     sent_annots.append(amr)
-
+                elif child2.tag == 'doc-amr':
+                    if child2.text:
+                        doc_annots.append(child2.text) #assuming the input file looks like events37.xml sent by Sijia
+                    else:                                                                                                                       doc_annots.append("") #otherwise No
+                                                                          
                 elif child2.tag == 'sentence':
                     doc_content_string += '\n'+child2.text
                     sents.append(child2.text.split())
 
-    return doc_content_string.strip(), sents, sent_annots
+    return doc_content_string.strip(), sents, sent_annots,doc_annots
 
 def parse_exported_file(content_string: str) -> Tuple[str, List[List[str]], List[str], List[str], List[Dict[str, str]]]:
     """
@@ -73,9 +78,9 @@ def parse_exported_file(content_string: str) -> Tuple[str, List[List[str]], List
              doc_annots: ['<div id="amr">(s1&nbsp;/&nbsp;sentence<br>\n&nbsp;&nbsp;:modal&nbsp;((s1t&nbsp;:AFF&nbsp;s2d)))<br>\n<div>\n', '<div id="amr">(s2&nbsp;/&nbsp;sentence<br>\n&nbsp;&nbsp;:temporal&nbsp;((s2t&nbsp;:after&nbsp;s2d)))<br>\n<div>\n']
              aligns: ['s1t: '3-3', 's2d': 2-2', 'State': -1--1]
     """
-    items = content_string.split("#")[:-1] #last item in list is original source file
-    doc_content_string = content_string.split("#")[-1].replace(' Source File: \n', '').strip() #remove first line
-
+    new_text = content_string.split("$$")[0] #last item in list is original source file
+    doc_content_string = content_string.split("$$")[-1].replace(' Source File: \n', '').strip() #remove first line
+    items = re.split(r'^#',new_text, flags=re.M) 
     sent_indice = list(range(1, len(items), 4))
     sent_annot_indice = list(range(2, len(items), 4))
     align_indice = list(range(3, len(items), 4))

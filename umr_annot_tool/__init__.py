@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from flask_mail import Mail
-from umr_annot_tool.config import Config
+from umr_annot_tool.config1 import Config
 import logging
 
 # extensions
@@ -37,5 +37,5 @@ def create_app(config_class=Config):
     app.register_blueprint(posts)
     app.register_blueprint(main)
     app.register_blueprint(errors)
-
+    app.debug=True
     return app

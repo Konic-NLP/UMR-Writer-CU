@@ -82,7 +82,9 @@ class ResetPasswordForm(FlaskForm):
     submit = SubmitField('Reset Password')
 
 class SearchUmrForm(FlaskForm):
-    concept = StringField('Type in concept (can be full or partial string): ')
-    word = StringField('Type in word (can be full or partial string): ')
+    concept = StringField('search annotated node, can be full or partial string, lemma or inflection/derivational form ')
+    word = StringField('Type in word (can be full or partial string) to find in the raw sentence: ')
     triple = StringField('Type in logical triple (in the form of * :ARG1 eat-01 or * :ARG1 ate):')
+    user_name=StringField('Specific the user name')
+    project_name=StringField('specify the project name or keep blank')
     submit = SubmitField('Search')

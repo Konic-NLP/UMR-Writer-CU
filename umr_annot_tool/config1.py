@@ -1,6 +1,6 @@
 import os
 class Config:
-    os.environ['DATABASE_URL']='postgresql://postgres:postgres@localhost:5432/postgres'
+    os.environ['DATABASE_URL']='postgresql://umrwriter:XR2sUSDnPQsozAKD@localhost:5432/umrwriter'
     SECRET_KEY = os.urandom(32)
     # SECRET_KEY = os.environ.get('SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')

@@ -1,4 +1,4 @@
-let show_amr_obj = {"option-string-args-with-head": false, "option-1-line-NEs": false, "option-1-line-ORs": false, "option-role-auto-case":false,
+let show_amr_obj = {"option-string-args-with-head": false, "option-1-line-NEs": true, "option-1-line-ORs": false, "option-role-auto-case":false,
     "option-check-chinese":true, "option-resize-command":true, 'option-indentation-style': 'variable', 'option-auto-reification': true};
 let abstractConcepts = ['ordinal-entity', 'temporal-quantity', 'amr-unknown', 'amr-choice', 'truth-value', 'name', 'accompany-01', 'age-01', 'benefit-01', 'have-concession-91', 'have-condition-91', 'have-degree-92', 'be-destined-for-91', 'last-01', 'exemplify-01', 'have-extent-91', 'have-frequency-91', 'have-instrument-91', 'have-li-91', 'be-located-at-91', 'have-manner-91', 'have-mod-91', 'have-name-91', 'have-ord-91', 'have-part-91', 'have-polarity-91', 'own-01', 'have-03', 'have-purpose-91', 'have-quant-91', 'be-from-91', 'have-subevent-91', 'be-temporally-at-91', 'concern-02', 'have-value-91', 'person']
 let table_id = 1;
@@ -51,6 +51,7 @@ function reset() {
  * @param partial_graphs_json
  */
 function initialize(frame_json, lang, partial_graphs_json) {
+	show_amr_obj["option-1-line-NEs"] = localStorage["one-line-NE"];
     language = lang; // assign language of the document
     umr['n'] = 0; //clear the current graph
     undo_list.push(cloneCurrentState()); //populate undo_list
@@ -2309,11 +2310,11 @@ function leafy_or_concept_p(loc) {
  * @param loc: 1.1
  * @returns {number}
  */
-function show_amr_new_line_sent(loc) {
-    let variable = umr[loc + '.v'];
-    let concept = umr[loc + '.c'];
-    let string = umr[loc + '.s'];
-    let role = umr[loc + '.r'] || '';
+function show_amr_new_line_sent(loc,umr_dict=umr) {
+    let variable = umr_dict[loc + '.v'];
+    let concept = umr_dict[loc + '.c'];
+    let string = umr_dict[loc + '.s'];
+    let role = umr_dict[loc + '.r'] || '';
     let head_loc = '';
     let head_concept = '';
     let head_role = '';
@@ -2322,12 +2323,12 @@ function show_amr_new_line_sent(loc) {
     let grand_head_concept = '';
     if (loc.match(/\.\d+$/)) {
         head_loc = loc.replace(/\.\d+$/, "");
-        head_concept = umr[head_loc + '.c'] || '';
-        head_role = umr[head_loc + '.r'] || '';
-        n = umr[head_loc + '.n'];
+        head_concept = umr_dict[head_loc + '.c'] || '';
+        head_role = umr_dict[head_loc + '.r'] || '';
+        n = umr_dict[head_loc + '.n'];
         if (head_loc.match(/\.\d+$/)) {
             grand_head_loc = head_loc.replace(/\.\d+$/, "");
-            grand_head_concept = umr[grand_head_loc + '.c'] || '';
+            grand_head_concept = umr_dict[grand_head_loc + '.c'] || '';
         }
     }
     if (role.match(/^:ARG\d+$/)) {
@@ -3010,13 +3011,9 @@ function UMR2db() {
 }
 
 function deHTML2(s){
-    s = s.replaceAll('<div id="amr">', '');
-    s = s.replaceAll('\n', "");
-    s = s.replaceAll('</div>', "");
-    s = s.replaceAll('<br>', '\n');
-    s = s.replaceAll('&nbsp;', ' ');
-    s = s.replaceAll('<i>', '');
-    s = s.replaceAll('</i>', '');
+        s = s.replaceAll('<br>', '\n');
+    s = deHTML(s)
+   
 
     return s;
 }
@@ -3047,7 +3044,7 @@ function export_annot(exported_items, content_string) {
         + "\n# alignment:"
         + a[2]
         + "\n# document level annotation:\n"
-        + deHTML2(a[3])
+        + docUmrTransform(deHTML2(a[3]), false).replaceAll('<br>', '\n')
         +"\n").join("\n\n# :: snt");
 
     let filename;
@@ -3063,7 +3060,7 @@ function export_annot(exported_items, content_string) {
     if (window.BlobBuilder && window.saveAs) {
         filename = 'exported_' + doc_name;
         text += output_str;
-        text += '\n\n' + '# Source File: \n' + content_string;
+        text += '\n\n' + '$$ Source File: \n' + content_string;
         console.log('Saving file ' + filename + ' on your computer, typically in default download directory');
         var bb = new BlobBuilder();
         bb.append(text);
@@ -3544,3 +3541,91 @@ function syntaxHighlight(json) {
 //     let lang=language
 //
 // }
+
+function export_annot1(exported_items, content_string,doc_name,meta_data) {
+    // let data={}
+    // console.log(exported_items,content_string)
+    content_string=String(content_string.replace('`',''))
+    let user_name, user_id,language,file_format,doc_id;
+    [user_name,user_id,language,file_format,doc_id]=meta_data;
+    // let doc_name = document.getElementById('filename').innerText;
+    exported_items.forEach(e => {
+        e[1] = e[1].replace(/<\/?(a|span)\b[^<>]*>/g, "");
+        e[1] = e[1].replace(/&nbsp;/g, " ");
+        e[1] = e[1].replace(/<br>/g, "");
+        e[1] = e[1].replace('<div id="amr">', '');
+        e[1] = e[1].replace('</div>', '');
+
+        let align_str = '';
+        for (const key in e[2]) {
+            if (e[2].hasOwnProperty(key)) {
+                align_str += key + ": " + e[2][key] + "\n";
+            }
+        }
+        e[2] = align_str;
+    })
+
+
+    let output_str = exported_items.map((a, index) =>
+        index + 1 + '\t' + a[0]
+        + "\n# sentence level graph:\n"
+        + a[1]
+        + "\n# alignment:"
+        + a[2]
+        + "\n# document level annotation:\n"
+        + docUmrTransform(deHTML2(a[3]), false).replaceAll('<br>', '\n')
+        + "\n").join("\n\n# :: snt");
+
+    let filename;
+    let text = "user name: " + user_name + '\n';
+    text+= "user id: " + user_id + '\n';
+    text += "file language: " +language + '\n';
+    text += "file format: " + file_format + '\n';
+    text += "Doc ID in database: " + doc_id+ '\n';
+
+    let curr_time = new Date();
+    // let text=''
+    text += "export time: " + curr_time.toLocaleString() + '\n\n';
+    text += '# :: snt';
+    // if (window.BlobBuilder && window.saveAs)
+       // let doc_name_no_extension=doc_name.split('.').pop()
+       // filename = 'exported_' + doc_name.replace('.'+doc_name_no_extension,'');
+	filename = 'exported_' + doc_name
+        text += output_str;
+        text += '\n\n' + '$$ Source File: \n' + content_string;
+        console.log(text)
+        console.log('Saving file ' + filename + ' on your computer, typically in default download directory');
+        let hidden_text=document.getElementById("hidden-text")
+        hidden_text.title=filename
+        hidden_text.value=text
+}
+
+
+
+function zip_file(data,project_name) {
+    let myDate = new Date();
+//
+
+    let zip = new JSZip();
+
+          // let metadata = zip.folder("metadata");
+          //   const obj = {name: "Simple name", age: "Simple age"};
+          //   metadata.file(`1.json`, JSON.stringify(obj, null, 4));
+    data.forEach(function (object){
+        // console.log(object.text, object.filename)
+        zip.file(object.filename,object.text)
+        });
+ zip.generateAsync(
+  {type:"blob"}
+).then(function(content) {
+
+            var a = document.createElement("a");
+            document.body.appendChild(a);
+            a.style = "display: none";
+            var url = URL.createObjectURL(content);
+            a.href = url;
+            a.download = project_name+".zip";
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+})}

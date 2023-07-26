@@ -114,7 +114,7 @@ $(document).ready(function(){
             let type = clickfunc.replace(/fillReplaceTemplate\('(.*)','(.*)','(.*)','(.*)'\)/i, "$1");
             let at = clickfunc.replace(/fillReplaceTemplate\('(.*)','(.*)','(.*)','(.*)'\)/i, "$2");
             let new_value = clickfunc.replace(/fillReplaceTemplate\('(.*)','(.*)','(.*)','(.*)'\)/i, "$3");
-
+            let  elem_id = clickfunc.replace(/fillReplaceTemplate\('(.*)','(.*)','(.*)','(.*)'\)/i, "$4");
             let at_list = at.split(/\s+/);
             if ((type === 'role') && (at_list) && (at_list.length >= 4) && (!at_list[2].match(/^"/))) {
                 at = at_list[0] + ' ' + at_list[1] + ' "';
@@ -126,8 +126,13 @@ $(document).ready(function(){
             if ((type === 'string') && new_value.match(/ /)) {
                 new_value = '"' + new_value + '"';
             }
+	    if (docAnnot){
+	    exec_command('replace ' + type + ' at ' + at + ' with ' + new_value+' '+elem_id, 1);
+
+	    
+	    }else{
             exec_command('replace ' + type + ' at ' + at + ' with ' + new_value, 1);
-        }
+	    }}
     })
 
     // listen for the change in replace in alignments

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from sqlalchemy import and_
 from flask import render_template, url_for, flash, redirect, request, Blueprint, Response, current_app, session, jsonify, make_response
 from flask_login import login_user, current_user, logout_user, login_required
 from umr_annot_tool import db, bcrypt
@@ -9,7 +10,7 @@ from umr_annot_tool.users.utils import save_picture, send_reset_email
 from sqlalchemy.orm.attributes import flag_modified
 import logging
 import json
-
+import re
 from one_time_scripts.parse_input_xml import html
 from lemminflect import getLemma
 
@@ -388,42 +389,158 @@ def reset_token(token):
 def search(project_id):
     if not current_user.is_authenticated:
         return redirect(url_for('users.login'))
-    member_id = request.args.get('member_id', 0)
+    # member_id = request.args.get('member_id', 1)
+    print(request.args.items(), 'test426', request.get_json())
+    # print(member_id, 'test395', project_id, request.args.keys())
+    for k, v in request.args.items():
+        print('test429', k, v)
     search_umr_form = SearchUmrForm()
     umr_results = []
     sent_results = []
-
     if search_umr_form.validate_on_submit():
         concept = search_umr_form.concept.data
         word = search_umr_form.word.data
         triple = search_umr_form.triple.data
-
+        user_name = search_umr_form.user_name.data
+        project_name = search_umr_form.project_name.data
         h, r, c = "", "", ""
 
         if triple:
             h, r, c = triple.split()
+        if project_name:
+            project = Project.query.filter(Project.project_name == project_name).first()
+            if project is not None:
+                docs = Doc.query.filter(Doc.project_id == project.id).all()
+            else:docs = Doc.query.all()
+        # docs = Doc.query.filter(Doc.project_id == project_id).all()  # find all the docs that belongs to the current project
+        else:
+            docs = Doc.query.all()
 
-        docs = Doc.query.filter(Doc.project_id == project_id, Doc.user_id == member_id).all()
-        doc_ids = [doc.id for doc in docs]
+        doc_ids = [doc.id for doc in docs]  # record all the id of files in this project
+        target_user = User.query.filter_by(username=user_name).first()
+        # project_name = Project.query.filter(Project.id == project_id).first().project_name  # current project name
         for doc_id in doc_ids:
-            annots = Annotation.query.filter(Annotation.doc_id == doc_id, Annotation.user_id == member_id).all()
+            if target_user:
+                annots = Annotation.query.filter(and_(Annotation.doc_id == doc_id, Annotation.user_id != 2,
+                                                      Annotation.user_id == target_user.id)).all()
+            else:
+                annots = Annotation.query.filter(Annotation.doc_id == doc_id,
+                                                 Annotation.user_id != 2).all()  # all the annotations for such docs
+            sents = Sent.query.filter(Sent.doc_id == doc_id).all()  # all corresponding raw sentences
+            sents.sort(key=lambda x: x.id)
             for annot in annots:
+                sent = sents[annot.sent_id - 1]
+                # the corresponding raw text for each annotation
                 umr_dict = dict(annot.sent_umr)
-                for value in umr_dict.values():
-                    if (concept and concept in str(value)) or (word and getLemma(word, upos="VERB")[0] in str(value)):
-                        # todo: bug: sent didn't got returned
-                        sent = Sent.query.filter(Sent.id == annot.sent_id).first()
-                        umr_results.append(annot.sent_annot)
-                        sent_results.append(sent)
-                    elif triple:
-                        if c and (c in str(value) or getLemma(c, upos="VERB")[0] in str(value)):
-                            k = list(umr_dict.keys())[list(umr_dict.values()).index(value)]
-                            if umr_dict.get(k.replace(".c", '.r'),"") == r and (h=="*" or umr_dict.get(k[:-4] + k[-2:], "")):
-                                sent = Sent.query.filter(Sent.id == annot.sent_id).first()
-                                umr_results.append(annot.sent_annot)
-                                sent_results.append(sent)
+                values = [v for k, v in umr_dict.items() if ('.s' in str(k)) or ('.c' in str(k))]
+                if word:
 
-    return render_template('search.html', title='search', search_umr_form=search_umr_form, umr_results=umr_results, sent_results = sent_results)
+                    if str(word).lower() in str(sent.content).strip().lower():
+                        print(sents)
+                        print('Iam1')
+                        print(sent.content, '453-', annot.sent_annot, sents.index(sent), annot.id)
+                        user_name = User.query.filter(User.id == annot.user_id).first()
+                        current_doc = Doc.query.filter(Doc.id == doc_id).first()
+                        file_name = current_doc.filename
+                        project_name = Project.query.filter(
+                            Project.id == current_doc.project_id).first().project_name
+
+                        umr_results.append(
+                            (sent.content,
+                             annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>'), user_name.username,file_name,project_name))
+                        # continue
+                        sent_results.append(sent.content)
+
+                elif concept:
+                    # umr_dict = dict(annot.sent_umr)
+                    # values = [v for k, v in umr_dict.items() if ('.s' in str(k)) or ('.c' in str(k))]
+                    # print(str(concept), getLemma(str(concept),upos="VERB"),'483')
+
+                    for value in values:
+                        if re.search('-\d+', str(concept)):
+                            condition = (str(concept) in str(value))
+                        else:
+                            condition = (str(concept) in str(value)) or (
+                                    getLemma(str(concept), upos="VERB")[0] in str(value))
+                        if condition:
+                            # or (getLemma(str(concept), upos="VERB")[0] in str(value)):
+                            print('Iam2', sent.content)
+                            print('test453', concept, value, getLemma(word, upos="VERB")[0])
+                            # todo: bug: sent didn't got returned
+                            # sent = Sent.query.filter(Sent.doc_id == doc_id).all()[annot.sent_id - 1]
+                            user_name = User.query.filter(User.id == annot.user_id).first()
+                            current_doc = Doc.query.filter(Doc.id == doc_id).first()
+                            file_name = current_doc.filename
+                            project_name = Project.query.filter(
+                                Project.id == current_doc.project_id).first().project_name
+                            umr_results.append(
+                                # '<hr flex-grow: 1 class="separate_line">'+sent.content + '<hr/>'+'<hr  flex-grow: 1 class="separate_line">'+annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>') + "</hr>"+'<hr>' + user_name.username + '<hr/>' + '<hr>'  + '</hr')
+                                (sent.content, annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>'),
+                                 user_name.username, file_name, project_name))
+                            sent_results.append(sent.content)
+                            print(umr_results, sent_results, 'test422')
+
+                else:
+                    if triple:
+                        # umr_dict = dict(annot.sent_umr)
+                        # values = [v for k, v in umr_dict.items() if ('.s' in str(k)) or ('.c' in str(k))]
+                        for value in values:
+                            if c and (c in str(value) or getLemma(c, upos="VERB")[0] in str(value)):
+
+                                print('Iam3')
+                                k = list(umr_dict.keys())[list(umr_dict.values()).index(value)]
+                                print(k,"I am test k 580",umr_dict)
+                                if umr_dict.get(k.replace(".c", '.r'), "") == r and (
+                                    h == "*" or h == umr_dict.get('.'.join(k.strip().split('.')[:-2])+'.c', "")):
+                                    print('I am here to test triples query')
+                                    user_name = User.query.filter(User.id == annot.user_id).first()
+                                    current_doc = Doc.query.filter(Doc.id == doc_id).first()
+                                    file_name = current_doc.filename
+                                    project_name = Project.query.filter(
+                                        Project.id == current_doc.project_id).first().project_name
+                                    umr_results.append(
+                                        # '<hr flex-grow: 1 class="separate_line">'+sent.content + '<hr/>'+'<hr  flex-grow: 1 class="separate_line">'+annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>') + "</hr>"+'<hr>' + user_name.username + '<hr/>' + '<hr>'  + '</hr')
+                                        (sent.content, annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>'),
+                                         user_name.username, file_name, project_name))
+                                    sent_results.append(sent.content)
+
+    return render_template('search.html', title='search', search_umr_form=search_umr_form, umr_results=umr_results,
+                           sent_results=sent_results) 
+      
+     
+    
+
+                       
+   
+  
+                        
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
 
 @users.route('/partialgraph/<int:project_id>', methods=['GET', 'POST'])
 def partialgraph(project_id):
@@ -614,3 +731,61 @@ def modification(project_id): #there is no post here like the previous ones, bec
     if not current_user.is_authenticated:
         return redirect(url_for('users.login'))
     return render_template('modification.html', project_id=project_id)
+
+
+
+@users.route('/settings/<int:project_id>', methods=['GET', 'POST'])
+def settings(project_id):
+        return render_template('settings.html', project_id=project_id)
+
+@users.route('/exproted_all_files/<int:project_id>',methods=['GET','POST'])
+def exported_all_files(project_id):
+    print(project_id,'392')
+    if not current_user.is_authenticated:
+        return redirect(url_for('users.login'))
+    Doc_id_list=Doc.query.filter(Doc.project_id==project_id).all()
+    exported_items_dict=[]
+    content_string_dict=[]
+    doc_name_dict=[]
+    project_name=Project.query.filter(Project.id==project_id).first().project_name
+    # exported_items=''
+    # content_string=''
+    # doc_name=''
+    meta_data=[]
+    for doc in Doc_id_list:
+        doc_id=doc.id
+        language=doc.lang
+        file_format=doc.file_format
+        # doc=Doc.query.get_or_404(int(doc_id.id))
+        doc_name=doc.filename
+        user_id=current_user.id
+        user_name=User.query.filter(User.id==user_id).first().username
+        meta_data.append([user_name, user_id, language, file_format, doc_id])
+        annotations = Annotation.query.filter(Annotation.doc_id == doc_id,
+                                              Annotation.user_id == user_id).order_by(
+            Annotation.sent_id).all()
+        filtered_sentences = Sent.query.filter(Sent.doc_id == doc_id).order_by(Sent.id).all()
+        all_sents = [sent2.content for sent2 in filtered_sentences]
+        all_annots = [annot.sent_annot for annot in annotations]
+        all_aligns = [annot.alignment for annot in annotations]
+        all_doc_annots = [annot.doc_annot for annot in annotations]
+        sent_with_annot_ids = [annot.sent_id for annot in annotations]
+        all_annots_no_skipping = [""] * len(all_sents)
+        all_aligns_no_skipping = [""] * len(all_sents)
+        all_doc_annots_no_skipping = [""] * len(all_sents)
+        for i, sa, a, da in zip(sent_with_annot_ids, all_annots, all_aligns, all_doc_annots):
+            all_annots_no_skipping[i - 1] = sa
+            all_aligns_no_skipping[i - 1] = a
+            all_doc_annots_no_skipping[i - 1] = da
+        exported_items = [list(p) for p in
+                          zip(all_sents, all_annots_no_skipping, all_aligns_no_skipping, all_doc_annots_no_skipping)]
+
+        exported_items_dict.append(exported_items)
+        content_string_dict.append(doc.content.replace('\\', '\\\\'))
+        doc_name_dict.append(doc_name)
+
+        # print(exported_items,doc.content,'424')
+        # content_string = doc.content.replace('\\', '\\\\')
+    return render_template('exported_all_files.html',
+                           exported_items_dict=exported_items_dict,content_string_dict=content_string_dict,
+                           doc_name_dict=doc_name_dict,project_name=project_name,meta_data=meta_data)

@@ -35,7 +35,7 @@ function change_permission(project_id){
     for (let i=0; i <selectElements.length; i++){
         selectElements[i].addEventListener('change', (event) => {
             console.log(`You like ${event.target.value}`);
-            fetch(`/project/${project_id}`, {
+            fetch(`/UMRWriter/project/${project_id}`, {
                 method: 'POST',
                 body: JSON.stringify({"remove_member_id": 0,
                 "new_member_name": "",
