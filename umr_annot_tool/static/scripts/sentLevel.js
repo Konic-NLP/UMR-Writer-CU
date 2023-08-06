@@ -131,6 +131,8 @@ function loadHistory(curr_sent_umr, curr_annotation_string, curr_alignment) {
     if (language === "english" || language === "chinese") {
         // showAnnotatedTokens();
     }
+    undo_list.push(cloneCurrentState());
+    undo_index++;
 }
 
 /**
