@@ -281,7 +281,7 @@
                             </div>
 			    <div><button class="btn btn-outline-secondary" id="delete-box"><a title="delete" href="javascript:changeShowStatus('delete');">delete</a></button>
 													                                     <button class="btn btn-outline-secondary" id="edit-box"><a title="edit" href="javascript:changeShowStatus('replace');">edit</a></button>
-                <a class="btn btn-outline-secondary" id="annot-button" title="click to view sent-level annotation" href="{{ url_for('main.doclevel_thyme_sent', doc_sent_id=doc_id ~ '_' ~ current_snt_id ~'_' ~ owner.id ) }} ">doc-sent-level-annot</a>
+                <a class="btn btn-outline-secondary" id="annot-button" title="click to view sent-level annotation" href="{{ url_for('main.doclevel_thyme_sent', doc_sent_id=doc_id ~ '_' ~ current_snt_id ~'_' ~ owner.id ) }} " target="_blank">doc-sent-level-annot</a>
 																	                                     <a class="btn btn-outline-secondary" id="annot-button" title="click to do sent-level annotation" href="{{ url_for('main.sentlevel', doc_sent_id=doc_id ~ '_' ~ current_snt_id ~'_' ~ owner.id ) }}">sent-level-annot</a>
 				    </div>    
                             <div id="error_prompt">
