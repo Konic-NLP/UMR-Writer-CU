@@ -1352,7 +1352,7 @@ def doclevel_thyme_sent(doc_sent_id):
         admin = current_user
         permission = ""
 
-    return render_template('doclevel_thyme_sent.html', doc_id=doc_id, sent_annot_pairs=sent_annot_pairs,
+    return render_template('doclevel_thyme_sent1.html', doc_id=doc_id, sent_annot_pairs=sent_annot_pairs,
                            sentAnnotUmrs=json.dumps(sentAnnotUmrs),
                            filename=doc.filename,
                            title='Doc Level Annotation', current_snt_id=current_snt_id,
