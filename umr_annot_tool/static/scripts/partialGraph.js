@@ -49,7 +49,7 @@ function deletePartialGraph(partialGraphKey, project_id){
     let partialGraphsElement = document.getElementById("partial-graph-" + partialGraphKey);
     partialGraphsElement.remove();
 
-    fetch(`UMRWriter/partialgraph/${project_id}`, {
+    fetch(`/UMRWriter/partialgraph/${project_id}#locate_page`, {
         method: 'POST',
         body: JSON.stringify({"partialGraphKey": partialGraphKey}),
     }).then(function (response) {
