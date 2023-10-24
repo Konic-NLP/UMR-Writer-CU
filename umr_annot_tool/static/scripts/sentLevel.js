@@ -2371,19 +2371,19 @@ function indent_for_loc(loc, c, style, n) {
 }
 
 function selectEvent() {
-    document.onselectionchange = function selectSpan() {
-        selection = document.getSelection();
-        document.getElementById('selected_tokens').innerHTML = ""; //lexicalized concept button
-        document.getElementById('selected_tokens').innerHTML += selection;
-
-        if (selection.anchorNode.parentNode.parentNode.parentNode.parentNode.parentNode.id === 'table2') {
-            table_id = 2;
-        }
-        if (selection.anchorNode.parentNode.tagName === "TD") {// in sentence table
-            begOffset = selection.anchorNode.parentElement.cellIndex;
-            endOffset = selection.focusNode.parentElement.cellIndex;
-        }
-    };
+    // document.onselectionchange = function selectSpan() {
+    //     selection = document.getSelection();
+    //     document.getElementById('selected_tokens').innerHTML = ""; //lexicalized concept button
+    //     document.getElementById('selected_tokens').innerHTML += selection;
+    //
+    //     if (selection.anchorNode.parentNode.parentNode.parentNode.parentNode.parentNode.id === 'table2') {
+    //         table_id = 2;
+    //     }
+    //     if (selection.anchorNode.parentNode.tagName === "TD") {// in sentence table
+    //         begOffset = selection.anchorNode.parentElement.cellIndex;
+    //         endOffset = selection.focusNode.parentElement.cellIndex;
+    //     }
+    // };
 }
 
 function get_selected_word() {
@@ -2716,6 +2716,7 @@ function changeSetting() {
  */
 function submit_command(e){
     let value = document.getElementById(e).value
+    value= value.replace('arg','ARG')
     exec_command(value,1)
     let logger= document.getElementById('logger')
     logger.innerHTML='last command: '+ value}
@@ -3111,24 +3112,28 @@ function syntaxHighlight(json) {
 function load_amr_replace_senid(amr){
 	  let s=''
 	 let pattern_=/\(s(\d+)[a-z]\d*/  //test whether this is a variable
-
+        let pattern_2=/\(([a-z]\d*)/     // test whether this a variable without teh sentence number
 	 amr.trim().split('\n').forEach(function(v,i){
-	if(pattern_.test(v)){
-	 let snt_id = document.getElementById('curr_shown_sent_id').innerText; //get the current senten
-	s+=v.replace(/\(s(\d+)([a-z]\d*)/,'(s'+snt_id.trim()+'$2') // replace that.
+    	 let snt_id = document.getElementById('curr_shown_sent_id').innerText; //get the current sent number and replace with the current one
+
+	if(pattern_.test(v)){ // if it's a variable and it indeed includes a sentence number
+	s+=v.replace(/\(s(\d+)([a-z]\d*)/g,'(s'+snt_id.trim()+'$2') // replace that.
 
 						        }
+    else if(pattern_2.test(v)){    // if it's a variable but without the sentence number
+            s+=v.replace(/\(([a-z]\d*)/g,'(s'+snt_id.trim()+'$1')
+    }
 
 		 else{
 		 
-		 s+=v;
+		 s+=v // if it's not a variable,  e.g :Aspect Performance
 		 }
 
 
 
 				    })
 
-		    // console.log(s)
+		    console.log(s,'test3132')
  return s
 		    //
  }
