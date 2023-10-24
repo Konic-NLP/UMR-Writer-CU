@@ -3016,8 +3016,19 @@ function check_command(){
             // 13 代表 回车键
             if (code === 13) {
                 // if (current.style.display==='block'){
+                    if(current.id==='subgraph_box'){
+                        if (current.value.split(' ')[0]==='save'&&current.value.trim().split(' ').length===3){
 
-                    submit_command(current.id)
+                            recordPartialGraph_typing()
+                        }else if(current.value.split(' ')[0]==='load'&&current.value.trim().split(' ').length===4){
+                            typing_addPartialGraph()
+                        }
+
+
+                    }
+                    else{
+
+                    submit_command(current.id)}
 
                     current.value=''
                 // }
