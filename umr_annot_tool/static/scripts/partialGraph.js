@@ -128,7 +128,7 @@ function recordPartialGraph_typing(){
     let owner_id = document.getElementById('user_id').innerText;
     let doc_sent_id = doc_id + "_" + snt_id + "_" + owner_id;
 
-    fetch(`${doc_sent_id}#locate_page`, {
+    fetch(`sentlevel/${doc_sent_id}#locate_page`, {
         method: 'POST',
         body: JSON.stringify({"partial_graphs": partial_graphs})
     }).then(function (response) {
