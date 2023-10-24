@@ -49,7 +49,7 @@ function deletePartialGraph(partialGraphKey, project_id){
     let partialGraphsElement = document.getElementById("partial-graph-" + partialGraphKey);
     partialGraphsElement.remove();
 
-    fetch(`/partialgraph/${project_id}`, {
+    fetch(`UMRWriter/partialgraph/${project_id}`, {
         method: 'POST',
         body: JSON.stringify({"partialGraphKey": partialGraphKey}),
     }).then(function (response) {
@@ -89,7 +89,7 @@ function recordPartialGraph(){
     let owner_id = document.getElementById('user_id').innerText;
     let doc_sent_id = doc_id + "_" + snt_id + "_" + owner_id;
 
-    fetch(`/sentlevel/${doc_sent_id}`, {
+    fetch(`UMRWriter/sentlevel/${doc_sent_id}`, {
         method: 'POST',
         body: JSON.stringify({"partial_graphs": partial_graphs})
     }).then(function (response) {
@@ -128,7 +128,7 @@ function recordPartialGraph_typing(){
     let owner_id = document.getElementById('user_id').innerText;
     let doc_sent_id = doc_id + "_" + snt_id + "_" + owner_id;
 
-    fetch(`/sentlevel/${doc_sent_id}#locate_page`, {
+    fetch(`UMRWriter/sentlevel/${doc_sent_id}#locate_page`, {
         method: 'POST',
         body: JSON.stringify({"partial_graphs": partial_graphs})
     }).then(function (response) {
