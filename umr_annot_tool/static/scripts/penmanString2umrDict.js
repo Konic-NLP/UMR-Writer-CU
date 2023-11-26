@@ -162,7 +162,7 @@ function string2umr_recursive(annotText, loc, state, umr_dict) {
         } else if (s_comp = annotText.match(/^[^ ()]+/)) {
             string_arg = s_comp[0].replace(/\s*$/, "");
             annotText = annotText.replace(/^[^ ()]+/, "");
-            if (getLocs(string_arg.trim())||string_arg.trim().match(/^s\d+[a-z0-9]+/)){
+            if (getLocs(string_arg.trim())||string_arg.trim().match(/^s\d+[a-z][0-9]*/)){
 
                 variable_arg = string_arg;
                 recordVariable(variable_arg, loc);
