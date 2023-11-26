@@ -130,7 +130,7 @@ def account():
     belongToProject=[]
     for hds in historyDocs:
         belongToProject.append(Project.query.get_or_404(hds.project_id).project_name)
-    print("belongToProject: ", belongToProject)
+    # print("belongToProject: ", belongToProject)
     return render_template('account.html', title='Account',
                            image_file=image_file, form=form, historyDocs=historyDocs,
                            projects=projects, belongToProject=belongToProject)

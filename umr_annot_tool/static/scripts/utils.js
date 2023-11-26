@@ -94,6 +94,7 @@ function text2num(s){
  */
 function getLocs(variable) { // b
     let value = variables[variable];
+    console.log(variables,'getLocs[' + variable + '] = ' + value,umr)
     if (value === undefined) {
         return undefined;
     } else if (typeof value == 'string') {

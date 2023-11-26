@@ -162,7 +162,8 @@ function string2umr_recursive(annotText, loc, state, umr_dict) {
         } else if (s_comp = annotText.match(/^[^ ()]+/)) {
             string_arg = s_comp[0].replace(/\s*$/, "");
             annotText = annotText.replace(/^[^ ()]+/, "");
-            if (getLocs(string_arg)) {
+            if (getLocs(string_arg.trim())||string_arg.trim().match(/^s\d+[a-z0-9]+/)){
+
                 variable_arg = string_arg;
                 recordVariable(variable_arg, loc);
                 string_arg = '';
@@ -172,6 +173,7 @@ function string2umr_recursive(annotText, loc, state, umr_dict) {
             setInnerHTML('error_msg', 'one of the character in string ' + annotText + ' is not matched, check for special characters for the specific language. ');
             document.getElementById("error_msg").className = `alert alert-danger`;
         }
+
         umr_dict[loc + '.s'] = string_arg;
         umr_dict[loc + '.c'] = '';
         umr_dict[loc + '.v'] = variable_arg;
@@ -216,7 +218,7 @@ function string2umr(annotText) {
             variablesInUse[variable] = 1;
         }
     });
-
+    // console.log(uncleanedRootVariables,'220')
     if (annotText.match(/\(/)) { //if there is an open parenthesis in annotText, e.g. annotText = "(s1t / taste-01)" meaning there is one node
         let prev_s_length = annotText.length; // 16
         let root_index = 1; // keep track of how many roots (how many graphs)
