@@ -52,7 +52,20 @@ function string2umr_recursive(annotText, loc, state, umr_dict) {
                 variable2concept[variable] = new_concept;
             }
             // THIS BLOCK ADD 1.v AND RECORD VARIABLE
-            if (getLocs(variable) && !docAnnot) { // if variable already exists
+            console.log('I am here',55,variable,umr_dict[loc + '.c'],umr,variables)
+             if (getLocs(variable) && !docAnnot) {
+            // uncomment to allow the reentrency to be annotated before its antecedent
+                 //if (getLocs(variable) && !docAnnot&&umr[getLocs(variable).toString()+'.c']!==concept&&umr[getLocs(variable).toString()+'.c']!=="") { // if variable already exists
+
+            // two situations won't activate this step
+                // 1. if the current concept find itself, the existing one is itself,
+                // thus won't create new variable, this occurs when the re entrency come before the anaphor
+                // another case if for re-entrency
+
+
+
+                console.log(umr[getLocs(variable).toString()+'.c'],57,umr,variables,getLocs(variable),concept)
+                // if (umr[getLocs(variable).toString()+'.c']=='') { // if variable exists more than once
                 new_variable = newVar(concept);
                 umr_dict[loc + '.v'] = new_variable;
                 recordVariable(new_variable, loc);
@@ -162,6 +175,7 @@ function string2umr_recursive(annotText, loc, state, umr_dict) {
         } else if (s_comp = annotText.match(/^[^ ()]+/)) {
             string_arg = s_comp[0].replace(/\s*$/, "");
             annotText = annotText.replace(/^[^ ()]+/, "");
+            console.log('i am here',170)
             if (getLocs(string_arg.trim())||string_arg.trim().match(/^s\d+[a-z][0-9]*/)){
 
                 variable_arg = string_arg;
@@ -281,6 +295,7 @@ function text2umr(annotText="", loaded_alignment='') {
                     if(matches[i].includes("undefined")){
                         align_info = matches[i].replace(/\((s\d*[a-z]\d*)\):\sundefined/gm, '-1--1');
                     }
+                    console.log('I am here 290')
                     let loc = getLocs(variable);
                     umr[loc + '.a'] = align_info;
                 }
