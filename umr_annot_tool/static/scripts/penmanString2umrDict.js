@@ -53,10 +53,9 @@ function string2umr_recursive(annotText, loc, state, umr_dict) {
             }
             // THIS BLOCK ADD 1.v AND RECORD VARIABLE
             console.log('I am here',55,variable,umr_dict[loc + '.c'],umr,variables)
-             if (getLocs(variable) && !docAnnot) {
+             // if (getLocs(variable) && !docAnnot) {
             // uncomment to allow the reentrency to be annotated before its antecedent
-                 //if (getLocs(variable) && !docAnnot&&umr[getLocs(variable).toString()+'.c']!==concept&&umr[getLocs(variable).toString()+'.c']!=="") { // if variable already exists
-
+                 if (getLocs(variable) && !docAnnot&&umr[getLocs(variable).toString()+'.c']!==concept&&umr[getLocs(variable).toString()+'.c']!=="") { // if variable already exists
             // two situations won't activate this step
                 // 1. if the current concept find itself, the existing one is itself,
                 // thus won't create new variable, this occurs when the re entrency come before the anaphor
