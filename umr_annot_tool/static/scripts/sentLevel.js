@@ -108,6 +108,7 @@ function customizeOptions(settingsJSON, attrId) {
  */
 function loadHistory(curr_sent_umr, curr_annotation_string, curr_alignment) {
     if (curr_sent_umr === "{}" && !isEmptyOrSpaces(deHTML(curr_annotation_string))) { //if current umr field is empty but the annot_str field (there could be cases: '<div id="amr">\n</div>\n') is not, this happens when upload file with existing annotations
+
         umr = string2umr(curr_annotation_string);
     } else {
         try {
@@ -1077,7 +1078,7 @@ function recordConcept(c, loc) {
 function newVar(concept) {
     let v;
     let initial = concept.substring(0, 1).toLowerCase();
-    if (!initial.match(/[a-z]/)) {
+    if (!initial.match(/[a-z]/)) {  // this is for languages other than using alphabetic characters
         initial = 'x';
     }
 
@@ -1090,18 +1091,22 @@ function newVar(concept) {
             initial = "s" + (parseInt(sentenceId) + 1) + initial;
         }
     }
-
+    console.log(initial, 'test 1094')
     // increase index or reserve variable 'i' for concept 'i'
-    if (getLocs(initial) || variablesInUse[initial] || concept.match(/^i./i)) {
+    if (getLocs(initial) || variablesInUse[initial] || concept.match(/^i\b/i)) {
+        console.log(getLocs(initial), variablesInUse[initial], concept.match(/^i\b/i), 'test 1098')
         let index = 2;
         v = initial + index;
+
         while (getLocs(v) || variablesInUse[v]) {
+            console.log(getLocs(v), variablesInUse[v], 'test 1103')
             index++;
             v = initial + index;
         }
     } else {
         v = initial;
     }
+    // console.log(concept, v, 'test 1109')
     return v;
 }
 
@@ -3124,6 +3129,7 @@ function load_amr_replace_senid(amr){
 	  let s=''
 	 let pattern_=/\(s(\d+)[a-z]\d*/  //test whether this is a variable
         let pattern_2=/\(([a-z]\d*)/     // test whether this a variable without teh sentence number
+    let pattern_3=/s(\d+)[a-z]\d*/
 	 amr.trim().split('\n').forEach(function(v,i){
     	 let snt_id = document.getElementById('curr_shown_sent_id').innerText; //get the current sent number and replace with the current one
 
@@ -3134,7 +3140,9 @@ function load_amr_replace_senid(amr){
     else if(pattern_2.test(v)){    // if it's a variable but without the sentence number
             s+=v.replace(/\(([a-z]\d*)/g,'(s'+snt_id.trim()+'$1')
     }
-
+        else if (pattern_3.test(v)) { // if it's a variable but without the sentence number, like reentrency
+    s+=v.replace(/s(\d+)([a-z]\d*)/g,'s'+snt_id.trim()+'$2') // replace that.
+    }
 		 else{
 		 
 		 s+=v // if it's not a variable,  e.g :Aspect Performance
