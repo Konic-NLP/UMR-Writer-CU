@@ -12,12 +12,26 @@
 			      <input type="checkbox" id="one-line-NE" checked>
 			            <span class="slider"></span>
 				        </label>
+        <br>
+        One Line Strings:
+          <label class="switch" title="one-line-string">
+			      <input type="checkbox" id="one-line-string" checked>
+			            <span class="slider"></span>
+				        </label>
+        {# add one slider bar for saving  #}
 					    <script type="text/javascript">
-						            localStorage.setItem("one-line-NE", document.getElementById("one-line-NE").checked)
-        let checkbox = document.querySelector("input[id=one-line-NE]");
+                            localStorage.setItem("one-line-NE", document.getElementById("one-line-NE").checked)
+                            localStorage.setItem("one-line-string", document.getElementById("one-line-string").checked)
+                            let checkbox = document.querySelector("input[id=one-line-NE]");
+                            let checkbox1 = document.querySelector("input[id=one-line-string]");
+
         checkbox.addEventListener('change', function() {
 		              localStorage.setItem("one-line-NE", document.getElementById("one-line-NE").checked);
 		        });
+        checkbox1.addEventListener('change', function() {
+		              localStorage.setItem("one-line-string", document.getElementById("one-line-string").checked);
+		        });
+
     </script>
     {% endblock content%}
 

@@ -1,4 +1,4 @@
-let show_amr_obj = {"option-string-args-with-head": false, "option-1-line-NEs": true, "option-1-line-ORs": false, "option-role-auto-case":false,
+let show_amr_obj = {"option-string-args-with-head": true, "option-1-line-NEs": true, "option-1-line-ORs": false, "option-role-auto-case":false,
     "option-check-chinese":true, "option-resize-command":true, 'option-indentation-style': 'variable', 'option-auto-reification': true};
 let abstractConcepts = ['ordinal-entity', 'temporal-quantity', 'amr-unknown', 'amr-choice', 'truth-value', 'name', 'accompany-01', 'age-01', 'benefit-01', 'have-concession-91', 'have-condition-91', 'have-degree-92', 'be-destined-for-91', 'last-01', 'exemplify-01', 'have-extent-91', 'have-frequency-91', 'have-instrument-91', 'have-li-91', 'be-located-at-91', 'have-manner-91', 'have-mod-91', 'have-name-91', 'have-ord-91', 'have-part-91', 'have-polarity-91', 'own-01', 'have-03', 'have-purpose-91', 'have-quant-91', 'be-from-91', 'have-subevent-91', 'be-temporally-at-91', 'concern-02', 'have-value-91', 'person']
 let table_id = 1;
@@ -46,6 +46,7 @@ let alignments = {}
  */
 function initialize(frame_json, lang, partial_graphs_json) {
 show_amr_obj["option-1-line-NEs"]= (localStorage['one-line-NE']==='true')
+    show_amr_obj["option-string-args-with-head"]= (localStorage['one-line-string']==='true')
 	language = lang; // assign language of the document
     umr['n'] = 0; //clear the current graph
     undo_list.push(cloneCurrentState()); //populate undo_list
@@ -1151,15 +1152,20 @@ function addTriple(head, role, arg, arg_type) {
     let arg_variable;
     let arg_concept;
     let arg_string;
+    let sentenceId = document.getElementById('sentence_id').value.trim();
     if (head && role && (arg !== undefined) && (arg !== '')  //all three parameters exist
         && head_var_locs) { //head already existed in variables dictionary
         arg_var_locs = getLocs(arg);
-        if (arg_var_locs //argument already exist in variables dictionary
+        let add_sent_arg_var_locs=getLocs('s'+sentenceId+arg); // re-entrancy do not need to input the prefix
+        if ((arg_var_locs||add_sent_arg_var_locs) //argument already exist in variables dictionary
             && (arg_type !== 'concept')
             && (arg_type !== 'string') // arg_type is '' (is variable)
             && (!role.match(/^:?(li|wiki)$/))
             && (!docAnnot)) {
             arg_variable = arg;
+            if (add_sent_arg_var_locs){
+                arg_variable= 's'+sentenceId+arg;  //type re-entrancy without the sentence number prefix
+            }
             arg_concept = '';
             arg_string = '';
         } else if ((language === 'chinese' || language === 'english' || language === 'arabic')
@@ -2743,6 +2749,44 @@ function getSelectedNode() {
 
 window.onload=function(){
     check_command();
+    // block for memorizing the scroll bar position for browsing the whole sentence list
+    let ls = window.localStorage;
+
+        // record the scroll bar position
+        if (ls.getItem("Sp")) {
+            document.getElementById("all-sentences").scrollTop = ls.getItem("Sp");
+        }else{
+            document.getElementById("all-sentences").scrollTop=0
+        }
+
+
+        // listen the scroll bar position change
+        document.getElementById("all-sentences").addEventListener('scroll', function() {
+
+            let sTop = document.getElementById("all-sentences").scrollTop
+            // localStorage for recording the position
+            ls.setItem('Sp', sTop);
+        },);
+    //
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // submit_command();
     // window.scrollTo({top:})
      if (!docAnnot){

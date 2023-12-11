@@ -56,10 +56,10 @@
 	    box-shadow: 0 0 2px #fff inset, 0 1px 0 rgba(0, 0, 0, 0.05);
 	    background-clip: padding-box;
 	    -webkit-touch-callout: none;
-	    -webkit-user-select: none;
-	    -moz-user-select: none;
-	    -ms-user-select: none;
-	    user-select: none;
+	    {#-webkit-user-select: none; enable to copy and paste #}
+	    {#-moz-user-select: none;#}
+	    {#-ms-user-select: none;#}
+	    {#user-select: none;#}
 	    background-color: #e4e4e4;
 	    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#eeeeee', endColorstr='#f4f4f4', GradientType=0);
 	    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(20%, #f4f4f4), color-stop(50%, #f0f0f0), color-stop(52%, #e8e8e8), color-stop(100%, #eee));
@@ -87,9 +87,9 @@ table, th, td {
                 <div class="search_results" style="display:flex;">
                     <table style="width: 100%">
                         <tr>
-                            <td>{{ umr_result[2]|safe }}</td>
+                            <td>{{ umr_result[2]}}</td>
                             <td>{{umr_result[3]}}</td>
-                            <td>{{umr_result[4]|safe}}</td>
+                            <td>{{umr_result[4]}}</td>
                         </tr>
                     </table>
                     <hr style="flex-grow: 1">
@@ -99,7 +99,7 @@ table, th, td {
             {% endfor %}
             {% for sent_result in sents_results %}
                 <li class="list-group-item d-flex justify-content-between align-items-center" >
-                    <p>{{ sent_result|safe }}</p>
+                    <p>{{ sent_result }}</p>
                 </li>
             {% endfor %}
         </ul>
