@@ -14,7 +14,8 @@ from bs4 import BeautifulSoup
 
 from flask import render_template, request, Blueprint
 from umr_annot_tool import db, bcrypt
-from umr_annot_tool.models import Sent, Doc, Annotation, User, Post, Lexicon, Projectuser, Project, Lattice, Partialgraph
+from umr_annot_tool.models import Sent, Doc, Annotation, User, Post, Lexicon, Projectuser, Project, Lattice, Partialgraph,Docda
+
 from umr_annot_tool.main.forms import UploadForm, UploadLexiconForm, LexiconItemForm, LookUpLexiconItemForm, \
     InflectedForm, SenseForm, CreateProjectForm, LexiconAddForm
 from sqlalchemy.orm.attributes import flag_modified
@@ -525,6 +526,11 @@ def sentlevelview(doc_sent_id):
     doc_id = int(doc_sent_id.split("_")[0])
     default_sent_id = int(doc_sent_id.split("_")[1])
     owner_user_id = current_user.id if int(doc_sent_id.split("_")[2])==0 else int(doc_sent_id.split("_")[2])# html post 0 here, it means it's my own annotation
+    da_query=False  # Display the DA , if the user id >0 , just return the annotation saved in the Annotation table; otherwise, returned the annotation saved in the DocDA table
+    if owner_user_id <0:
+        da_query=True
+        owner_user_id=-owner_user_id
+
     owner = User.query.get_or_404(owner_user_id)
 
     # check who is the admin of the project containing this file:
@@ -560,7 +566,11 @@ def sentlevelview(doc_sent_id):
         snt_id = int(request.form["sentence_id"])
 
     try:
-        curr_annotation = Annotation.query.filter(Annotation.doc_id == doc.id, Annotation.sent_id == snt_id,
+        if da_query:  # if for da, just returned the annotation from DocDA; otherwise returned from Annotation
+            curr_annotation = Docda.query.filter(Docda.doc_id== doc.id, Docda.sent_id == snt_id,
+                                                         Docda.user_id == owner_user_id).first()
+        else:
+            curr_annotation = Annotation.query.filter(Annotation.doc_id == doc.id, Annotation.sent_id == snt_id,
                                                          Annotation.user_id == owner_user_id).first()
         curr_annotation_string = curr_annotation.sent_annot.strip()
         curr_sent_umr = curr_annotation.sent_umr

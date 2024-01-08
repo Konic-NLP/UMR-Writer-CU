@@ -5,6 +5,8 @@ from flask_login import UserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer # email and password reset
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy import Column, Integer, JSON
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.orm import relationship
 
 
 
@@ -48,7 +50,7 @@ class User(db.Model, UserMixin):
         return User.query.get(user_id)
 
     def __repr__(self):
-        return f"User('{self.username}', '{self.email}', '{self.image_file}', '{self.lexicon}')"
+        return f"User('{self.username}', '{self.email}', '{self.image_file}')"
 
 
 class Post(db.Model):
@@ -142,7 +144,13 @@ class Docda(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     doc_id = db.Column(db.Integer, db.ForeignKey('doc.id'), nullable=False)
-
+    sent_annot = db.Column(db.Text, nullable=True)   # save the annotation in the DocDA as a independent copy, and isolate with the original one
+    doc_annot = db.Column(db.Text)
+    sent_umr = db.Column(MutableDict.as_mutable(JSON), nullable=False, server_default='{}')
+    doc_umr = db.Column(MutableDict.as_mutable(JSON), nullable=False, server_default='{}')
+    # actions = db.Column(ARRAY(db.Text), nullable=False, server_default='{}')
+    alignment = db.Column(MutableDict.as_mutable(JSON), nullable=False, server_default='{}')
+    sent_id = db.Column(db.Integer, nullable=False)
 class Lattice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)

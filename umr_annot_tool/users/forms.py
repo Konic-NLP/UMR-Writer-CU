@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
-from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
+from wtforms import StringField, PasswordField, SubmitField, BooleanField,SelectField, RadioField
+from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Required
 from flask_login import current_user
 from umr_annot_tool.models import User, Projectuser
 
@@ -87,4 +87,5 @@ class SearchUmrForm(FlaskForm):
     triple = StringField('Type in logical triple (in the form of * :ARG1 eat-01 or * :ARG1 ate):')
     user_name=StringField('Specific the user name')
     project_name=StringField('specify the project name or keep blank')
+    document_type=RadioField('recordtyope',[Required()],choices=[('All','All'),('qc','Quality Control Only')],default='All')  # added for search the qc only
     submit = SubmitField('Search')

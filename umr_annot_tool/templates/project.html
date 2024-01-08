@@ -167,7 +167,7 @@
             {% for qcDoc in qcDocs %}
                 <li class="list-group-item d-flex justify-content-between align-items-center" id="qcDoc-{{ qcDoc.id }}">
                     {% if permission in ['admin', 'edit'] %}
-                    <a title="{{ qcDoc.content }}" href="{{ url_for('main.sentlevel', doc_sent_id=qcDoc.id ~ '_1_' ~ qcUploaderIds[loop.index0])}}">
+                    <a title="{{ qcDoc.content }}" href="{{ url_for('main.sentlevel', doc_sent_id=qcDoc.id ~ '_1_' ~ qcProjectIds[loop.index0])}}">
                         {{qcDoc.filename}}
                     </a>
                     {% else %}
@@ -216,7 +216,7 @@
 {#                            {{ daFilenames[loop.index0] }}#}
 {#                        </a>#}
 {#                    {% else %}#}
-                    <a href="{{ url_for('main.sentlevelview', doc_sent_id=daDoc.doc_id ~ '_1_' ~ daDoc.user_id)}}">
+                    <a href="{{ url_for('main.sentlevelview', doc_sent_id=daDoc.doc_id ~ '_1_' ~ (-daDoc.user_id))}}">
                         {{ daFilenames[loop.index0] }}
                     </a>
 {#                    {% endif %}#}

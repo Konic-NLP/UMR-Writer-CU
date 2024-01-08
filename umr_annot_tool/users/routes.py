@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from sqlalchemy import and_
+from sqlalchemy import and_,distinct
 from flask import render_template, url_for, flash, redirect, request, Blueprint, Response, current_app, session, jsonify, make_response
 from flask_login import login_user, current_user, logout_user, login_required
 from umr_annot_tool import db, bcrypt
@@ -11,6 +11,7 @@ from sqlalchemy.orm.attributes import flag_modified
 import logging
 import json
 import re
+from sqlalchemy.sql import expression
 from one_time_scripts.parse_input_xml import html
 from lemminflect import getLemma
 
@@ -167,7 +168,7 @@ def project(project_id):
             print("annotated_doc_id:", annotated_doc_id)
             delete_annot_doc_id = int(request.form["delete_annot_doc_id"])
             print("delete_annot_doc_id:", delete_annot_doc_id)
-            add_qc_doc_id = int(request.form["add_qc_doc_id"])
+            add_qc_doc_id = int(request.form["add_qc_doc_id"])  # which doc will be added to qc by current user
             print("add_qc_doc_id:", add_qc_doc_id)
             rm_qc_doc_id= int(request.form["rm_qc_doc_id"])
             print("rm_qc_doc_id", rm_qc_doc_id)
@@ -214,14 +215,14 @@ def project(project_id):
                         dummy_annotation = Annotation.query.filter(Annotation.doc_id==annotated_doc_id, Annotation.sent_id==i+1, Annotation.user_id==dummy_user_id).first()
                         if dummy_annotation:
                             print('I am here 35')
-                            annotation = Annotation(sent_annot=dummy_annotation.sent_annot, doc_annot=dummy_annotation.doc_annot, alignment=dummy_annotation.alignment, author=current_user,
+                            annotation = Annotation(sent_annot=dummy_annotation.sent_annot, doc_annot=dummy_annotation.doc_annot, alignment=dummy_annotation.alignment, user_id=current_user.id,
                                                     sent_id=dummy_annotation.sent_id, doc_id=dummy_annotation.doc_id, sent_umr=dummy_annotation.sent_umr, doc_umr=dummy_annotation.doc_umr)
                             db.session.add(annotation)
                         else:
                             print('I am here 36')
                             annotation = Annotation(sent_annot='',
                                                     doc_annot='',
-                                                    alignment={}, author=current_user,
+                                                    alignment={}, user_id=current_user.id,
                                                     sent_id=i+1, doc_id=annotated_doc_id,
                                                     sent_umr={}, doc_umr={})
                             db.session.add(annotation)
@@ -233,20 +234,31 @@ def project(project_id):
                 logging.info(db.session.commit())
                 flash("file is removed from My Annotations", 'info')
             elif add_qc_doc_id !=0: # add to Quality Control
-                qc_id = Project.query.filter(Project.id == project_id).first().qc_user_id
-                qc = User.query.filter(User.id==qc_id).first()
+                qc_id = Project.query.filter(Project.id == project_id).first().qc_user_id # find the default qc user
+                qc = User.query.filter(User.id==qc_id).first()  #get the project owner, who is the qc owner
                 print("qc_id:", qc.id)
                 # check existing:
                 if not (Annotation.query.filter(Annotation.doc_id == add_qc_doc_id, Annotation.user_id == qc_id).all()):
                     print("I am here 70")
                     member_annotations = Annotation.query.filter(Annotation.doc_id == add_qc_doc_id, Annotation.user_id == current_user.id).all()
+                    print('I am here 244')
                     for a in member_annotations:
-                        qc_annotation = Annotation(sent_annot=a.sent_annot, doc_annot=a.doc_annot, alignment=a.alignment, author=qc,
+                        qc_annotation = Annotation(sent_annot=a.sent_annot, doc_annot=a.doc_annot, alignment=a.alignment, user_id=qc_id,
                                                    sent_id=a.sent_id, doc_id=a.doc_id, sent_umr=a.sent_umr, doc_umr=a.doc_umr)
                         db.session.add(qc_annotation)
-                    docqc = Docqc(doc_id=add_qc_doc_id, project_id=project_id, author=current_user) #document which member uploaded the qc doc of this project
+                    print('I am here 249')
+                    docqc = Docqc(doc_id=add_qc_doc_id, project_id=project_id, upload_member_id=current_user.id) #document which member uploaded the qc doc of this project
                     db.session.add(docqc)
+                    print('I am here 253')
                     logging.info(db.session.commit())
+                    #
+                    #     #Jiawei's'
+                    #     docqc = Docqc(doc_id=add_qc_doc_id, project_id=project_id, upload_member_id=current_user,
+                    #                   sent_annot=a.sent_annot, doc_annot=a.doc_annot, alignment=a.alignment, qc_user_id=qc,
+                    #                   sent_id=a.sent_id, sent_umr=a.sent_umr, doc_umr=a.doc_umr)
+
+                        # db.session.add(docqc)
+
                 else:
                     flash('this file already exist in Quality Control, add to double annotated files instead', 'info')
             elif rm_qc_doc_id != 0 and rm_qc_user_id !=0: # delete from Quality Control
@@ -260,13 +272,39 @@ def project(project_id):
                 if not Docda.query.filter(Docda.project_id==project_id, Docda.user_id==current_user.id, Docda.doc_id==add_da_doc_id).all():
                     docda = Docda(project_id=project_id, user_id=current_user.id, doc_id=add_da_doc_id)
                     db.session.add(docda)
-                    docqc = Docqc.query.filter(Docqc.project_id==project_id, Docqc.doc_id==add_da_doc_id, Docqc.upload_member_id!=current_user.id).first()
+                    print('I am here for 275')
+                    # docqc = Docqc.query.filter(Docqc.project_id==project_id, Docqc.doc_id==add_da_doc_id, Docqc.upload_member_id!=current_user.id).first()
+                    # Jiawei.3
+
+                    da_member_annotations = Annotation.query.filter(Annotation.doc_id == add_da_doc_id,
+                                                                 Annotation.user_id == current_user.id).all()
+                    print(len(da_member_annotations), 'how many da_annotations')
+                    for a in da_member_annotations:
+                        docda = Docda(project_id=project_id, user_id=current_user.id, doc_id=add_da_doc_id,
+                                      sent_annot=a.sent_annot, doc_annot=a.doc_annot, alignment=a.alignment,
+                                                   sent_id=a.sent_id, sent_umr=a.sent_umr, doc_umr=a.doc_umr)
+                        db.session.add(docda)
+                    print('reach 286')
+                    # end
+                    docqc = Docqc.query.filter(Docqc.project_id==project_id, Docqc.doc_id==add_da_doc_id,
+                                               Docqc.upload_member_id!=current_user.id).first() # any other users upload the annotation as qc
                     print("docqc: ", docqc)
                     if docqc: #if there is a qc version of this doc already
+                        print('I am here for 292')
                         if not Docda.query.filter(Docda.project_id == project_id, Docda.user_id == docqc.upload_member_id,
-                                                  Docda.doc_id == add_da_doc_id).all(): #if this qc version not already in docda already
-                            docda_qc = Docda(project_id=project_id, user_id=docqc.upload_member_id, doc_id=add_da_doc_id)
-                            db.session.add(docda_qc)
+                                                  Docda.doc_id == add_da_doc_id).all(): #the user who uploaded the qc but not  created one da
+                            # docda_qc = Docda(project_id=project_id, user_id=docqc.upload_member_id, doc_id=add_da_doc_id) # create a da for the user
+                            # db.session.add(docda_qc)
+                    #JIaiwe
+                            qc_annotations = Annotation.query.filter(Annotation.doc_id == add_da_doc_id, Annotation.user_id==docqc.upload_member_id).all()
+                            #
+                            for a in qc_annotations:
+                                docda_qc = Docda(project_id=project_id, user_id=docqc.upload_member_id,
+                                                 doc_id=add_da_doc_id, sent_annot=a.sent_annot,
+                                                 doc_annot=a.doc_annot, alignment=a.alignment, sent_id=a.sent_id,
+                                                 sent_umr=a.sent_umr, doc_umr=a.doc_umr)
+                                db.session.add(docda_qc)
+                            # da_qc_member_annotations = Annotation.query.filter(Annotation.doc_id == add_da_doc_id,
                     logging.info(db.session.commit())
             elif rm_da_doc_id != 0 and rm_da_user_id != 0:
                 print("I am here 66")
@@ -307,7 +345,10 @@ def project(project_id):
 
     current_permission = Projectuser.query.filter(Projectuser.user_id == current_user.id,
                                                   Projectuser.project_id == project_id).first().permission
-    daDocs = Docda.query.filter(Docda.project_id == project_id).all()
+    daDocs = Docda.query.filter(Docda.project_id == project_id).distinct(Docda.doc_id).all()
+    # daDocs = Docda.query.filter(Docda.project_id == project_id, Docda.sent_id == 1).all() #sent_id = 1, so each file
+    #     # only appear once
+
     daUploaders = []
     daFilenames = []
     for daDoc in daDocs:
@@ -316,15 +357,17 @@ def project(project_id):
 
     projectDocs = Doc.query.filter(Doc.project_id == project_id).all()
     checked_out_by = []
-    qcAnnotations = Annotation.query.filter(Annotation.user_id == Project.query.get(int(project_id)).qc_user_id, Annotation.sent_id == 1).all() #when add to my annotation, anntation row of sent1 got added in Annotation table, therefore check if there is annotation for sent1
+    qcAnnotations = Annotation.query.filter(Annotation.user_id == Project.query.get(int(project_id)).qc_user_id, Annotation.sent_id == 1).all() #when add to my annotation, annotation row of sent1 got added in Annotation table, therefore check if there is annotation for sent1
     qcDocs = []
     qcUploaders = []
     qcUploaderIds = []
+    qcProjectIds= []
     for qca in qcAnnotations:
-        qcDocs.append(Doc.query.filter(Doc.id==qca.doc_id).first())
-        uploader_id = Docqc.query.filter(Docqc.doc_id==qca.doc_id, Docqc.project_id==project_id).first().upload_member_id
-        qcUploaderIds.append(uploader_id)
-        qcUploaders.append(User.query.filter(User.id==uploader_id).first().username)
+        qcDocs.append(Doc.query.filter(Doc.id==qca.doc_id).first()) # which docs were added
+        uploader_id = Docqc.query.filter(Docqc.doc_id==qca.doc_id, Docqc.project_id==project_id).first().upload_member_id # who add the qc
+        qcUploaderIds.append(uploader_id)  #get the uploader id
+        qcUploaders.append(User.query.filter(User.id==uploader_id).first().username)  #the name of the uploader
+        qcProjectIds.append(Project.query.get(int(project_id)).qc_user_id)  # this is for get the QC folder
     annotatedDocs = []
     for projectDoc in projectDocs:
         if Annotation.query.filter(Annotation.doc_id == projectDoc.id, Annotation.user_id==current_user.id).all():
@@ -343,7 +386,7 @@ def project(project_id):
                             members=members, permissions=permissions, member_ids=member_ids, checked_out_by=list(checked_out_by),
                            projectDocs=projectDocs, qcDocs=qcDocs, qcUploaders=qcUploaders, qcUploaderIds=qcUploaderIds, annotatedDocs=annotatedDocs,
                            daDocs=daDocs, daUploaders=daUploaders,  daFilenames=daFilenames, permission=current_permission,
-                           form=form, dummy_user_id=dummy_user_id)
+                           form=form, dummy_user_id=dummy_user_id,qcProjectIds=qcProjectIds)
 
 @users.route("/user/<string:username>")
 def user_posts(username):
@@ -397,37 +440,89 @@ def search(project_id):
     search_umr_form = SearchUmrForm()
     umr_results = []
     sent_results = []
+
     if search_umr_form.validate_on_submit():
         concept = search_umr_form.concept.data
         word = search_umr_form.word.data
         triple = search_umr_form.triple.data
         user_name = search_umr_form.user_name.data
         project_name = search_umr_form.project_name.data
+        record_type=search_umr_form.document_type.data
+        # print('I am here to test record type',record_type)
         h, r, c = "", "", ""
 
         if triple:
             h, r, c = triple.split()
-        if project_name:
+        qc_user_id =Project.query.with_entities(Project.qc_user_id).all()  # unspecify the project, all kinds of qc users
+        # qc_user_id=db.session.query(Docqc.)
+        print(qc_user_id,'here is 456')
+        if project_name:  # get the Doc related to the specific project
+
+
             project = Project.query.filter(Project.project_name == project_name).first()
             if project is not None:
+
                 docs = Doc.query.filter(Doc.project_id == project.id).all()
+
+                qc_user_id=project.qc_user_id  #if the project exists, just specify the qc for this project   // the qc for the specific project
+
+                print(qc_user_id,'here is 466')
             else:docs = Doc.query.all()
+
+
         # docs = Doc.query.filter(Doc.project_id == project_id).all()  # find all the docs that belongs to the current project
         else:
             docs = Doc.query.all()
 
         doc_ids = [doc.id for doc in docs]  # record all the id of files in this project
-        target_user = User.query.filter_by(username=user_name).first()
-        # project_name = Project.query.filter(Project.id == project_id).first().project_name  # current project name
+        target_user = User.query.filter_by(username=user_name).first()  # the user specified
+        # project_name = Project.query.filter(Project.id == project_id).first().project_name  # current project name.
+        # print(isinstance(qc_user_id,int),type(qc_user_id),'here is 480',list(qc_user_id))
+        '''
+        get qc_ids into a list no matter the qc is for one project or all. 
+        '''
+        qc_user_ids = [qc_user_id] if isinstance(qc_user_id, int) else [r[0] for r in qc_user_id]
+
+
         for doc_id in doc_ids:
-            if target_user:
-                annots = Annotation.query.filter(and_(Annotation.doc_id == doc_id, Annotation.user_id != 2,
-                                                      Annotation.user_id == target_user.id)).all()
-            else:
-                annots = Annotation.query.filter(Annotation.doc_id == doc_id,
-                                                 Annotation.user_id != 2).all()  # all the annotations for such docs
             sents = Sent.query.filter(Sent.doc_id == doc_id).all()  # all corresponding raw sentences
             sents.sort(key=lambda x: x.id)
+            # if not search_project:  # this is all qc annotations, unspecicified projects
+
+            annots_qc = Annotation.query.filter(and_(Annotation.doc_id == doc_id, Annotation.user_id != 3,  #exlude the dummny_user
+                                                     Annotation.user_id.in_(qc_user_ids),
+                                                     Annotation.sent_annot is not None)).all()  # exclude the empty annotation
+            print(annots_qc,'here is 491',qc_user_ids)
+
+
+            if target_user:
+                # qc_users=Docqc.query.filter(Docqc.upload_member_id==target_user.id,Docqc.doc_id==doc_id)
+                annots = Annotation.query.filter(and_(Annotation.doc_id == doc_id,
+                                                      Annotation.user_id == target_user.id,Annotation.sent_annot!='')).all()  # get the specific user if user specific the name
+                qc_projects_for_user=Docqc.query.filter(Docqc.upload_member_id==target_user.id).first()
+                if qc_projects_for_user:
+                    qc_user_id_for_user=Project.query.filter(Project.id==qc_projects_for_user.project_id).first().qc_user_id  #get the qc annotations for the user
+                    annots_qc= Annotation.query.filter(and_(Annotation.doc_id == doc_id,
+                                                             Annotation.user_id == qc_user_id_for_user,
+                                                             Annotation.sent_annot is not None)).all()
+                else:
+                    annots_qc=[]
+                annots=annots+annots_qc  #when specifying the user, just returning the normal annotations and his/her qc annotation
+                if record_type=='qc':
+                    annots=annots_qc
+            else:
+                print('here is 507')  # if not specify the user, just get all normal annotations
+                annots = Annotation.query.filter(Annotation.doc_id == doc_id,   #here the query also include the qc annotations
+                                                 Annotation.user_id != 3,
+                                                 Annotation.sent_annot is not None).all()  # all the annotations for such docs
+                print(annots,'here is 510',record_type)
+                if record_type == 'qc': # if just qc
+                    print(record_type)
+                    annots = annots_qc  #then just return the qc annotations for the selected projects
+                    #otherwise, return all annotation
+
+
+
             for annot in annots:
                 sent = sents[annot.sent_id - 1]
                 # the corresponding raw text for each annotation
@@ -439,15 +534,23 @@ def search(project_id):
                         print(sents)
                         print('Iam1')
                         print(sent.content, '453-', annot.sent_annot, sents.index(sent), annot.id)
-                        user_name = User.query.filter(User.id == annot.user_id).first()
+                        user_cur=User.query.filter(User.id == annot.user_id).first()
+                        user_name = user_cur.username
+                        record_type1='annotation'  # default type of record
+
                         current_doc = Doc.query.filter(Doc.id == doc_id).first()
                         file_name = current_doc.filename
-                        project_name = Project.query.filter(
-                            Project.id == current_doc.project_id).first().project_name
-
+                        project_cur = Project.query.filter(
+                            Project.id == current_doc.project_id).first()  # current project
+                        if user_cur.id in qc_user_ids:  # if the current user id is in the qc user ids,. that means current annotation is a qc version
+                            record_type1 = 'qc_annotation'
+                            qc_doc=Docqc.query.filter(Docqc.project_id ==project_cur.id,Docqc.doc_id==current_doc.id).first()   # get the corresponding record in the Docqc
+                            '''we will not use the annotation.user_id to get the user name,because it will return xxxx_qc rather than true username, thus we need to get the qc record and find the upload member'''
+                            user_name=User.query.filter(User.id==qc_doc.upload_member_id).first().username
+                        project_name=project_cur.project_name
                         umr_results.append(
                             (sent.content,
-                             annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>'), user_name.username,file_name,project_name))
+                             annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>'), user_name,file_name,project_name,record_type1))
                         # continue
                         sent_results.append(sent.content)
 
@@ -468,15 +571,22 @@ def search(project_id):
                             print('test453', concept, value, getLemma(word, upos="VERB")[0])
                             # todo: bug: sent didn't got returned
                             # sent = Sent.query.filter(Sent.doc_id == doc_id).all()[annot.sent_id - 1]
-                            user_name = User.query.filter(User.id == annot.user_id).first()
+                            user_cur = User.query.filter(User.id == annot.user_id).first()
+                            user_name=user_cur.username
                             current_doc = Doc.query.filter(Doc.id == doc_id).first()
                             file_name = current_doc.filename
                             project_name = Project.query.filter(
                                 Project.id == current_doc.project_id).first().project_name
+                            record_type1='annotation'
+                            if user_cur.id in qc_user_ids:
+                                record_type1 = 'qc_annotation'
+                                docqc=Docqc.query.filter(Docqc.project_id == current_doc.project_id,
+                                                   Docqc.doc_id == current_doc.id).first()
+                                user_name = User.query.filter(User.id == docqc.upload_member_id).first().username
                             umr_results.append(
                                 # '<hr flex-grow: 1 class="separate_line">'+sent.content + '<hr/>'+'<hr  flex-grow: 1 class="separate_line">'+annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>') + "</hr>"+'<hr>' + user_name.username + '<hr/>' + '<hr>'  + '</hr')
                                 (sent.content, annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>'),
-                                 user_name.username, file_name, project_name))
+                                 user_name, file_name, project_name,record_type1))
                             sent_results.append(sent.content)
                             print(umr_results, sent_results, 'test422')
 
@@ -493,52 +603,27 @@ def search(project_id):
                                 if umr_dict.get(k.replace(".c", '.r'), "") == r and (
                                     h == "*" or h == umr_dict.get('.'.join(k.strip().split('.')[:-2])+'.c', "")):
                                     print('I am here to test triples query')
-                                    user_name = User.query.filter(User.id == annot.user_id).first()
+                                    user_name = User.query.filter(User.id == annot.user_id).first().username
                                     current_doc = Doc.query.filter(Doc.id == doc_id).first()
                                     file_name = current_doc.filename
-                                    project_name = Project.query.filter(
-                                        Project.id == current_doc.project_id).first().project_name
+                                    cur_project=Project.query.filter(
+                                        Project.id == current_doc.project_id).first()
+                                    project_name = cur_project.project_name
+                                    record_type1='annotation'
+                                    if user_name.id in qc_user_ids:
+                                        record_type1 = 'qc_annotation'
+                                        docqc=Docqc.query.filter(Docqc.project_id == current_doc.project_id,
+                                                           Docqc.doc_id == current_doc.id).first()
+                                        user_name = User.query.filter(
+                                            User.id == docqc.upload_member_id).first().username
                                     umr_results.append(
                                         # '<hr flex-grow: 1 class="separate_line">'+sent.content + '<hr/>'+'<hr  flex-grow: 1 class="separate_line">'+annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>') + "</hr>"+'<hr>' + user_name.username + '<hr/>' + '<hr>'  + '</hr')
                                         (sent.content, annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>'),
-                                         user_name.username, file_name, project_name))
+                                         user_name, file_name, project_name,record_type1))
                                     sent_results.append(sent.content)
 
     return render_template('search.html', title='search', search_umr_form=search_umr_form, umr_results=umr_results,
                            sent_results=sent_results) 
-      
-     
-    
-
-                       
-   
-  
-                        
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
 
 
 

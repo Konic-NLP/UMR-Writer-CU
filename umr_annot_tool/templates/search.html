@@ -30,6 +30,9 @@
 		<div>
                   {{ search_umr_form.project_name.label}}{{ search_umr_form.project_name(class="form-control form-control-sm")}}<br/>
                 </div>
+            <legend>Whether just search QC or All (exclude DA)</legend>
+{{ search_umr_form.document_type(class="form-control form-control-sm",style="display:inline-block;list-style-type:none")}}
+
         </fieldset>
 
         <div class="input-group-append">
@@ -43,6 +46,9 @@
             {% for umr_result in umr_results %}
                 <li class="list-group-item d-flex justify-content-between align-items-center" >
                                    <style>
+                        ul{
+                            list-style-type: none;
+                        }
 	.search_results{
 	    padding: 3px 5px 3px 18px;
 	    margin: 3px 0 3px 5px;
@@ -90,6 +96,7 @@ table, th, td {
                             <td>{{ umr_result[2]}}</td>
                             <td>{{umr_result[3]}}</td>
                             <td>{{umr_result[4]}}</td>
+                            <td>{{umr_result[5]}}</td>
                         </tr>
                     </table>
                     <hr style="flex-grow: 1">
@@ -111,6 +118,7 @@ table, th, td {
         document.getElementById("triple").value = "";
 	document.getElementById("user_name").value=""
 	  document.getElementById("project_name").value=""
+        document.getElementById('document_type').value=""
     </script>
 
 {% endblock content %}
