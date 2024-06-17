@@ -55,13 +55,11 @@ function string2umr_recursive(annotText, loc, state, umr_dict) {
             console.log('I am here',55,variable,umr_dict[loc + '.c'],umr,variables)
              // if (getLocs(variable) && !docAnnot) {
             // uncomment to allow the reentrency to be annotated before its antecedent
-                 if (getLocs(variable) && !docAnnot&&umr[getLocs(variable).toString()+'.c']!==concept&&umr[getLocs(variable).toString()+'.c']!=="") { // if variable already exists
+            if (getLocs(variable) && !docAnnot && umr_dict[getLocs(variable)+'.c']) { // if variable already exists
             // two situations won't activate this step
                 // 1. if the current concept find itself, the existing one is itself,
                 // thus won't create new variable, this occurs when the re entrency come before the anaphor
                 // another case if for re-entrency
-
-
 
                 console.log(umr[getLocs(variable).toString()+'.c'],57,umr,variables,getLocs(variable),concept)
                 // if (umr[getLocs(variable).toString()+'.c']=='') { // if variable exists more than once
@@ -175,8 +173,7 @@ function string2umr_recursive(annotText, loc, state, umr_dict) {
             string_arg = s_comp[0].replace(/\s*$/, "");
             annotText = annotText.replace(/^[^ ()]+/, "");
             console.log('i am here',170)
-            if (getLocs(string_arg.trim())||string_arg.trim().match(/^s\d+[a-z][0-9]*/)){
-
+            if (string_arg.match(/^s\d+\w\d*/)){
                 variable_arg = string_arg;
                 recordVariable(variable_arg, loc);
                 string_arg = '';

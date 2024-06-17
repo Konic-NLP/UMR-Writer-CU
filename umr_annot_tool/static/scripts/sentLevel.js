@@ -123,6 +123,7 @@ function loadHistory(curr_sent_umr, curr_annotation_string, curr_alignment) {
     }
     populateUtilityDicts(); // based on current umr dict, populate 3 dicts: variables, concepts, and variable2concept
     show_amr('show');
+
     try {
         alignments = JSON.parse(curr_alignment);
     } catch (e) {
@@ -150,6 +151,7 @@ function populateUtilityDicts() {
         }
     });
 }
+
 
 /**
  * from currently selected word, get the lemma and generate the senses menu list
@@ -1157,15 +1159,15 @@ function addTriple(head, role, arg, arg_type) {
         && head_var_locs) { //head already existed in variables dictionary
         arg_var_locs = getLocs(arg);
         let add_sent_arg_var_locs=getLocs('s'+sentenceId+arg); // re-entrancy do not need to input the prefix
-        if ((arg_var_locs||add_sent_arg_var_locs) //argument already exist in variables dictionary
+        if (arg_var_locs //argument already exist in variables dictionary
             && (arg_type !== 'concept')
             && (arg_type !== 'string') // arg_type is '' (is variable)
             && (!role.match(/^:?(li|wiki)$/))
             && (!docAnnot)) {
             arg_variable = arg;
-            if (add_sent_arg_var_locs){
-                arg_variable= 's'+sentenceId+arg;  //type re-entrancy without the sentence number prefix
-            }
+//            if (add_sent_arg_var_locs){
+//                arg_variable= 's'+sentenceId+arg;  //type re-entrancy without the sentence number prefix
+//            }
             arg_concept = '';
             arg_string = '';
         } else if ((language === 'chinese' || language === 'english' || language === 'arabic')
