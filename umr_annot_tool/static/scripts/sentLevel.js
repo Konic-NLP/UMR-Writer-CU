@@ -731,8 +731,12 @@ function submit_template_action(id, tokens = "", parentVarLoc = "") {
 
 function exec_command(value, top) { // value: "b :arg1 car" , top: 1
     let show_amr_args = '';
+
     let snt_id = document.getElementById('curr_shown_sent_id').innerText;
+
     snt_id="s"+snt_id.trim();
+
+
     if (value) {
         value = strip(value);
         value = value.replace(/^([a-z]\d*)\s+;([a-zA-Z].*)/, "$1 :$2"); // b ;arg0 boy ->  b :arg0 boy
@@ -778,9 +782,13 @@ function exec_command(value, top) { // value: "b :arg1 car" , top: 1
                 }
                 show_amr_args = 'show';
             }
-        } else if ((cc.length === 3) && cc[1].match(/^:[a-z]/i) && getLocs(snt_id+cc[0])) { //example: value = "s1t :ARG5 freedom"
-            addTriple(snt_id+cc[0], cc[1], cc[2], '');
+        } else if ((cc.length === 3) && cc[1].match(/^:[a-z]/i) && ((getLocs(snt_id+cc[0])&&!docAnnot) ||  (getLocs(cc[0])&&docAnnot)  )) { //example: value = "s1t :ARG5 freedom"
+
+            if(!docAnnot){addTriple(snt_id+cc[0], cc[1], cc[2], '');}
+            else{addTriple(cc[0], cc[1], cc[2], '');}
+
             show_amr_args = 'show';
+
         } else if ((cc.length >= 4) && cc[1].match(/^:[a-z]/i) && getLocs(snt_id+cc[0]) && validEntryConcept(cc[2]) && (!getLocs(cc[2]))) { //example: value = "s1t :ARG0 person Jin Zhao"
             addNE(snt_id+value);
             show_amr_args = 'show';
@@ -1154,11 +1162,15 @@ function addTriple(head, role, arg, arg_type) {
     let arg_variable;
     let arg_concept;
     let arg_string;
-    let sentenceId = document.getElementById('sentence_id').value.trim();
+    let sentenceId
+    if (!docAnnot){ sentenceId = 's'+document.getElementById('sentence_id').value.trim();
+    console.log(sentenceId,head, role, arg, arg_type)
+    }else{sentenceId =''}
+
     if (head && role && (arg !== undefined) && (arg !== '')  //all three parameters exist
         && head_var_locs) { //head already existed in variables dictionary
         arg_var_locs = getLocs(arg);
-        let add_sent_arg_var_locs=getLocs('s'+sentenceId+arg); // re-entrancy do not need to input the prefix
+        let add_sent_arg_var_locs=getLocs(sentenceId+arg); // re-entrancy do not need to input the prefix
         if (arg_var_locs //argument already exist in variables dictionary
             && (arg_type !== 'concept')
             && (arg_type !== 'string') // arg_type is '' (is variable)
@@ -2753,7 +2765,7 @@ window.onload=function(){
     check_command();
     // block for memorizing the scroll bar position for browsing the whole sentence list
     let ls = window.localStorage;
-
+        if(!docAnnot){
         // record the scroll bar position
         if (ls.getItem("Sp")) {
             document.getElementById("all-sentences").scrollTop = ls.getItem("Sp");
@@ -2768,7 +2780,7 @@ window.onload=function(){
             let sTop = document.getElementById("all-sentences").scrollTop
             // localStorage for recording the position
             ls.setItem('Sp', sTop);
-        },);
+        },)};
     //
 
 
