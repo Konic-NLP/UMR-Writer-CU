@@ -460,17 +460,23 @@ def search(project_id):
 
 
             project = Project.query.filter(Project.project_name == project_name).first()
+
+
             if project is not None:
 
                 docs = Doc.query.filter(Doc.project_id == project.id).all()
 
                 qc_user_id=project.qc_user_id  #if the project exists, just specify the qc for this project   // the qc for the specific project
 
-                print(qc_user_id,'here is 466')
-            else:docs = Doc.query.all()
+                # print(qc_user_id,'here is 466')
+            else:
+
+                return render_template('search.html', title='search', search_umr_form=search_umr_form,
+                                       umr_results=None,
+                                       sent_results=sent_results)
 
 
-        # docs = Doc.query.filter(Doc.project_id == project_id).all()  # find all the docs that belongs to the current project
+                # docs = Doc.query.filter(Doc.project_id == project_id).all()  # find all the docs that belongs to the current project
         else:
             docs = Doc.query.all()
 
@@ -491,20 +497,20 @@ def search(project_id):
 
             annots_qc = Annotation.query.filter(and_(Annotation.doc_id == doc_id, Annotation.user_id != 3,  #exlude the dummny_user
                                                      Annotation.user_id.in_(qc_user_ids),
-                                                     Annotation.sent_annot is not None)).all()  # exclude the empty annotation
+                                                     Annotation.sent_annot is not None,Annotation.sent_annot!='')).all()  # exclude the empty annotation
             print(annots_qc,'here is 491',qc_user_ids)
 
 
             if target_user:
                 # qc_users=Docqc.query.filter(Docqc.upload_member_id==target_user.id,Docqc.doc_id==doc_id)
                 annots = Annotation.query.filter(and_(Annotation.doc_id == doc_id,
-                                                      Annotation.user_id == target_user.id,Annotation.sent_annot!='')).all()  # get the specific user if user specific the name
+                                                      Annotation.user_id == target_user.id,Annotation.sent_annot!='',Annotation.sent_annot is not None )).all()  # get the specific user if user specific the name
                 qc_projects_for_user=Docqc.query.filter(Docqc.upload_member_id==target_user.id).first()
                 if qc_projects_for_user:
                     qc_user_id_for_user=Project.query.filter(Project.id==qc_projects_for_user.project_id).first().qc_user_id  #get the qc annotations for the user
                     annots_qc= Annotation.query.filter(and_(Annotation.doc_id == doc_id,
                                                              Annotation.user_id == qc_user_id_for_user,
-                                                             Annotation.sent_annot is not None)).all()
+                                                             Annotation.sent_annot is not None,Annotation.sent_annot!='')).all()
                 else:
                     annots_qc=[]
                 annots=annots+annots_qc  #when specifying the user, just returning the normal annotations and his/her qc annotation
