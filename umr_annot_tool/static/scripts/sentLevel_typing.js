@@ -3210,7 +3210,7 @@ function UMR2db() {
         }
     }
 
-    fetch(`UMRWriter/sentlevel/${doc_sent_id}`, {
+    fetch(`/UMRWriter/sentlevel/${doc_sent_id}`, {
         method: 'POST',
         body: JSON.stringify({"amr": annot_str, "align": alignments2save, "snt_id": snt_id, "umr": umr})
     }).then(function (response) {
