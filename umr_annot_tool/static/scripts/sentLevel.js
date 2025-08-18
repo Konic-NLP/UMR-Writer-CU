@@ -783,9 +783,13 @@ function exec_command(value, top) { // value: "b :arg1 car" , top: 1
                 show_amr_args = 'show';
             }
         } else if ((cc.length === 3) && cc[1].match(/^:[a-z]/i) && ((getLocs(snt_id+cc[0])&&!docAnnot) ||  (getLocs(cc[0])&&docAnnot)  )) { //example: value = "s1t :ARG5 freedom"
+            if(cc[1]===":ord"){
+            addord(snt_id+value)
+
+            }else{
 
             if(!docAnnot){addTriple(snt_id+cc[0], cc[1], cc[2], '');}
-            else{addTriple(cc[0], cc[1], cc[2], '');}
+            else{addTriple(cc[0], cc[1], cc[2], '');}}
 
             show_amr_args = 'show';
 
@@ -1310,6 +1314,26 @@ function addNE(value) {
             let sub_role = ':op' + (i - name_start + 1);
             addTriple(name_var, sub_role, cc[i], 'string');
         }
+    }
+}
+
+function addord(value) {
+    let cc = argSplit(value);
+    let head_var = cc[0];
+    let ord_value = cc[2];
+    let name_var = '';
+    let name_start = 3;
+    let ne_arg_var = addTriple(head_var, cc[1], 'ordinal-entity', 'concept');
+//        if (ne_arg_var) {
+//            name_var = addTriple(ne_arg_var, ':value', 'name', 'concept');
+//        } else {
+//            console.log('Ill-formed add-ne command. Possibly a problem with argument ' + ne_type);
+//        }
+
+    if (ne_arg_var) {
+
+            addTriple(ne_arg_var, ':value', ord_value, '');
+
     }
 }
 
@@ -2815,6 +2839,13 @@ window.onload=function(){
      frame_button.addEventListener("click", function () {  // get the token that user is inputing,
 
          window.open("http://ska.tjemye.rs/propbank/development-frames/","newwindow","height=700,width=500,top=300,left=300,toolbar=yes,menubar=yes,scrollbars=no,resizable=1,location=no,status=no")
+
+ });
+
+     let resource_button=document.getElementById('resource_button')
+     resource_button.addEventListener("click", function () {  // get the token that user is inputing,
+
+         window.open("http://umr4nlp.github.io/web/amr_resources.html","newwindow","height=700,width=500,top=300,left=300,toolbar=yes,menubar=yes,scrollbars=no,resizable=1,location=no,status=no")
 
  });
 

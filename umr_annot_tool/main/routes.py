@@ -1108,12 +1108,12 @@ def display_post():
 def guidelines():
     return render_template('user_guide.html')
 
-@main.route('/<path:filename>', methods=['GET', 'POST'])
-def download(filename):
-    # Appending app path to upload folder path within app root folder
-    uploads = "static/sample_files/" + filename
-    # Returning file from appended path
-    return send_file(uploads, as_attachment=True, attachment_filename=filename)
+# @main.route('/<path:filename>', methods=['GET', 'POST'])
+# def download(filename):
+#     # Appending app path to upload folder path within app root folder
+#     uploads = "static/sample_files/" + filename
+#     # Returning file from appended path
+#     return send_file(uploads, as_attachment=True, attachment_filename=filename)
 
 # #farasapy
 # @main.route('/getfarasalemma', methods=['GET', 'POST'])
@@ -1133,7 +1133,8 @@ def download(filename):
 def getfarasalemma():
     token = request.get_json(force=True)["token"]
     print("inflected_form: ", token)
-    lemma = lemma_dict[token]
+    lemma = lemma_dict.get(token,token)
+    # lemma = lemma_dict[token]
     print("lemma_form from local dictionary: ", lemma)
     return make_response(jsonify({"text": lemma}), 200)
 

@@ -102,7 +102,7 @@ function getLocs(variable) { // b
     if (variable.match(/.*?(-\d+)/)){
         variable=variable.replace(variable.match(/.*?(-\d+)/)[1],'')
     }
-    console.log('test100', variable)
+    console.log('test100', variable,variables)
     let value = variables[variable];
     console.log('103 ',value)
     if (value === undefined) {
@@ -282,27 +282,35 @@ function setInnerHTML(id, value) {
  * @param list
  * @returns {number}
  */
-function listContainsCap(list) {
+async function listContainsCap(list) {
     var len = list.length;
 
     for (var i = 1; i < len; i++) {
         // console.log('288',list[i].match(/[A-Z]/))
         if(list[i].match(/x\d+/)){
-        if (index2concept(list[i]).match(/[A-Z]/)) {
+
+        const result = await index2concept(list[i])
+        if (typeof result ==='string'&&result.match(/[A-Z]/)) {
             return 1;
         }}
     }
     return 0;
 }
 
+
+function hasArabic(text) {
+  // 使用\p{Script=Arabic}匹配任何阿拉伯字母
+  return /[\p{Script=Arabic}]/u.test(text);
+}
 /**
  * return null when input is like "#", or "buy.01", 不能有大写字母，单引号，或者数字（arapahoe里面有）
  * @param concept
  * @returns {*}
  */
 function validEntryConcept(concept) {
+    if (hasArabic(concept)){return true}else{
     return concept.match(/^(?:[a-z]+(?:-[a-z]+)*(?:-\d+)?|(?:concept\.|\!):?[a-zA-Z0-9][-._a-zA-Z0-9']*|\*(?:OR)\*)$/);
-}
+}}
 // function validEntryConcept(concept) {
 //     return concept.match(/^(?:.+(?:-[a-z]+)*(?:-\d+)?|(?:concept\.|\!):?[a-zA-Z0-9][-._a-zA-Z0-9']*|\*(?:OR)\*)$/);
 // }

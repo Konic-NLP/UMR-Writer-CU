@@ -270,7 +270,7 @@ function chainUp(array){ //array = ["(s1t :before s2d)", "(s2d :before DCT)"]
  * @param curr_doc_annot
  * @param curr_sent_id:
  */
-function load_doc_history(curr_doc_umr, curr_doc_annot, curr_sent_id){
+async function load_doc_history(curr_doc_umr, curr_doc_annot, curr_sent_id){
     let modal_triples = [];
     let modal_triples_strings = [];
     try{
@@ -328,8 +328,8 @@ function load_doc_history(curr_doc_umr, curr_doc_annot, curr_sent_id){
     modal_triples = modal_triples_strings.map(s => s.split(" "));
 
     for (let i = 0; i < modal_triples.length; i++) {
-        exec_command(`s${curr_sent_id}s0 :modal ${modal_triples[i][0]}`, '1');
-        exec_command(`${modal_triples[i][0]} ${modal_triples[i][1]} ${modal_triples[i][2]}`, '1');
+        await exec_command(`s${curr_sent_id}s0 :modal ${modal_triples[i][0]}`, '1');
+        await exec_command(`${modal_triples[i][0]} ${modal_triples[i][1]} ${modal_triples[i][2]}`, '1');
         show_amr('show');
     }
     show_amr('show');

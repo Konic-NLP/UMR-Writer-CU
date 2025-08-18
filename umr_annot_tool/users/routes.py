@@ -548,7 +548,7 @@ def search(project_id):
                         file_name = current_doc.filename
                         project_cur = Project.query.filter(
                             Project.id == current_doc.project_id).first()  # current project
-                        if user_cur.id in qc_user_ids:  # if the current user id is in the qc user ids,. that means current annotation is a qc version
+                        if user_cur.id in qc_user_ids:  # if the current user id is in the qc user ids, that means current annotation is a qc version
                             record_type1 = 'qc_annotation'
                             qc_doc=Docqc.query.filter(Docqc.project_id ==project_cur.id,Docqc.doc_id==current_doc.id).first()   # get the corresponding record in the Docqc
                             '''we will not use the annotation.user_id to get the user name,because it will return xxxx_qc rather than true username, thus we need to get the qc record and find the upload member'''
@@ -589,11 +589,19 @@ def search(project_id):
                                 docqc=Docqc.query.filter(Docqc.project_id == current_doc.project_id,
                                                    Docqc.doc_id == current_doc.id).first()
                                 user_name = User.query.filter(User.id == docqc.upload_member_id).first().username
-                            umr_results.append(
-                                # '<hr flex-grow: 1 class="separate_line">'+sent.content + '<hr/>'+'<hr  flex-grow: 1 class="separate_line">'+annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>') + "</hr>"+'<hr>' + user_name.username + '<hr/>' + '<hr>'  + '</hr')
-                                (sent.content, annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>'),
-                                 user_name, file_name, project_name,record_type1))
-                            sent_results.append(sent.content)
+                            if target_user:
+                                if user_name==search_umr_form.user_name.data:
+                                    umr_results.append(
+                                        # '<hr flex-grow: 1 class="separate_line">'+sent.content + '<hr/>'+'<hr  flex-grow: 1 class="separate_line">'+annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>') + "</hr>"+'<hr>' + user_name.username + '<hr/>' + '<hr>'  + '</hr')
+                                        (sent.content, annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>'),
+                                         user_name, file_name, project_name,record_type1))
+                                    sent_results.append(sent.content)
+                            else:
+                                umr_results.append(
+                                    # '<hr flex-grow: 1 class="separate_line">'+sent.content + '<hr/>'+'<hr  flex-grow: 1 class="separate_line">'+annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>') + "</hr>"+'<hr>' + user_name.username + '<hr/>' + '<hr>'  + '</hr')
+                                    (sent.content, annot.sent_annot.replace(' ', '&nbsp;').replace('\n', '<br>'),
+                                     user_name, file_name, project_name, record_type1))
+                                sent_results.append(sent.content)
                             print(umr_results, sent_results, 'test422')
 
                 else:
