@@ -255,7 +255,7 @@ function processSyncCases(token, lang, numfied_token){
 }
 
 function fetchArabicLemma(token) {
-    return fetch(`getfarasalemma`, {
+    return fetch(`../getfarasalemma`, {
         method: 'POST',
         body: JSON.stringify({"token": token})
     })
