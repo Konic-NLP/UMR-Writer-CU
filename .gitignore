@@ -4,6 +4,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 config.py
+umr_annot_tool/__init__.py
 *.pyc
 */__pycache__/
 # C extensions
