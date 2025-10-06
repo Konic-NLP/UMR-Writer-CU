@@ -123,9 +123,6 @@
     {% else %}
         <div id="sentence">
             {% autoescape off %}
-{#            <script type="text/javascript">#}
-{#            gettable({{ info2display.sent_htmls[snt_id-1]|tojson}})#}
-{#        </script>#}
             <p>{{ info2display.sent_htmls[snt_id-1] }}</p>
 
             {% endautoescape %}
@@ -146,6 +143,7 @@
 {#                </div>#}
 {#    <hr>#}
                 <div id="amr">
+
                 </div>
             </div>
 <hr>
@@ -161,39 +159,39 @@
     });
   });
 
-  async function onInputHandler(event, lang) {
-    try {
-      let command_value = event.target.value;
-      let senses = null;
-
-      if (command_value) {
-        let value = strip(command_value);
-        value = value.replace(/^([a-z]\d*)\s+;([a-zA-Z].*)/, "$1 :$2");
-        let cc = argSplit(command_value);
-        let concept_token = cc.slice(-1)[0];
-        let concept = await index2concept(concept_token);
-
-        if (concept_token.match(/x\d+/)) {
-          senses = conceptDropdown(concept, lang);
-          console.log('3254', senses);
-        } else {
-          senses = conceptDropdown(concept_token, lang);
-          console.log('3258', senses);
-        }
-      }
-
-      console.log('test 3246', senses);
-
-      if (senses && senses.res) {
-        document.getElementById('frame_display').innerHTML = syntaxHighlight(senses.res, undefined, 4);
-      } else {
-        document.getElementById('frame_display').innerHTML = "无有效结果";
-      }
-    } catch (error) {
-      console.error('处理输入时出错:', error);
-      document.getElementById('frame_display').innerHTML = `错误: ${error.message}`;
-    }
-  }
+  {#async function onInputHandler(event, lang) {#}
+  {#  try {#}
+  {#    let command_value = event.target.value;#}
+  {#    let senses = null;#}
+  {##}
+  {#    if (command_value) {#}
+  {#      let value = strip(command_value);#}
+  {#      value = value.replace(/^([a-z]\d*)\s+;([a-zA-Z].*)/, "$1 :$2");#}
+  {#      let cc = argSplit(command_value);#}
+  {#      let concept_token = cc.slice(-1)[0];#}
+  {#      let concept = await index2concept(concept_token);#}
+  {##}
+  {#      if (concept_token.match(/x\d+/)) {#}
+  {#        senses = conceptDropdown(concept, lang);#}
+  {#        console.log('3254', senses);#}
+  {#      } else {#}
+  {#        senses = conceptDropdown(concept_token, lang);#}
+  {#        console.log('3258', senses);#}
+  {#      }#}
+  {#    }#}
+  {##}
+  {#    console.log('test 3246', senses);#}
+  {##}
+  {#    if (senses && senses.res) {#}
+  {#      document.getElementById('frame_display').innerHTML = syntaxHighlight(senses.res, undefined, 4);#}
+  {#    } else {#}
+  {#      document.getElementById('frame_display').innerHTML = "无有效结果";#}
+  {#    }#}
+  {#  } catch (error) {#}
+  {#    console.error('处理输入时出错:', error);#}
+  {#    document.getElementById('frame_display').innerHTML = `错误: ${error.message}`;#}
+  {#  }#}
+  {#}#}
 
 
 
@@ -412,6 +410,8 @@
             <button class="btn btn-info btn" id ="load" onclick="set_load_visible('move_box');">move</button>
             <button class="btn btn-info btn" id ="load" onclick="set_load_visible('replace_box');">replace</button>
             <button class="btn btn-info btn" id ="load" onclick="set_load_visible('delete_box');">tdelete</button>
+            <button class="btn btn-info btn" id ="lemmatization_click" onclick="set_load_visible('lemmatization_box');" >manual lemmatization</button>
+
 
 
 
@@ -421,6 +421,8 @@
         <input style="display: none"  placeholder="move + branch head node + to + new head + role, e.g: move x2 to x3 :ARG5"  class="command" id="move_box" >
         <input style="display: none"  oninput="onInputHandler(event,'{{ lang }}')" class="command" id="replace_box"  placeholder="replace + concept + at + variable with new variable, e.g:replace concept at x1 with x2">
         <input style="display: none" class="command" id ="delete_box"  placeholder=" delete+ head+roles+variable, e.g:delete x2 :ARG1 x3">
+        <input style="display: none" oninput="onInputHandler(event,'{{ lang }}')"    class="manual_lemma" id ="lemmatization_box"  onfocus="lemmatizationFocused=true;"
+       onblur="lemmatizationFocused=false;" >
 {#    frame info:#}
 {#    {{ frame_info }}#}
     <p id="frame_info"></p>

@@ -344,8 +344,9 @@ def sentlevel_typing(doc_sent_id):
 
     pg = Partialgraph.query.filter(Partialgraph.project_id == project_id).first()
     partial_graphs_json = pg.partial_umr
-    print("partial_graphs_json: ", partial_graphs_json)
+    # print("partial_graphs_json: ", partial_graphs_json)
 
+    print("info2display", info2display)
     return render_template('sentlevel_typing.html', lang=doc.lang, filename=doc.filename, snt_id=snt_id, doc_id=doc_id,
                            info2display=info2display,
                            frame_dict=json.dumps(frame_dict),

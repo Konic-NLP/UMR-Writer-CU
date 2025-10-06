@@ -178,10 +178,9 @@ function populateUtilityDicts(){
         console.log('test283', frame_info);
         return frame_info;
     }
-
+    console.log('token', token)
     // 仅阿拉伯语走异步逻辑
-    return fetchArabicLemma(token)
-        .then(submenu_items => {
+    return fetchArabicLemma(token).then(submenu_items => {
             $('#frame_display').html(syntaxHighlight(submenu_items));
             frame_info = getSenses(submenu_items);
             console.log('test283', frame_info);
@@ -255,6 +254,20 @@ function processSyncCases(token, lang, numfied_token){
 }
 
 function fetchArabicLemma(token) {
+
+
+     if (document.getElementById("lemmatization_box").value.trim()!==""){
+         let senses =[]
+         Object.keys(frame_dict).forEach(function(key) {
+            if (key.split("-")[0] === document.getElementById("lemmatization_box").value.trim()) {
+                senses.push({"name": key, "desc": frame_dict[key]});
+            }
+        })
+        const result =  senses.length === 0
+            ? {"res": [{"name": token, "desc": "not in frame files"}]}
+            : {"res": senses};
+     return Promise.resolve(result);
+     }
     return fetch(`../getfarasalemma`, {
         method: 'POST',
         body: JSON.stringify({"token": token})
@@ -898,7 +911,7 @@ async function  exec_command(value, top,is_doc=0) { // value: "b :arg1 car" , to
                 && validEntryConcept(ne_concept)
                 && (!getLocs(ne_concept))
                 && (listContainsCap(cc) || is_standard_named_entity[ne_concept])) {
-                let ne_var = await newUMR(trimConcept(ne_concept), cc.slice(2, cc.length));
+                let ne_var = newUMR(trimConcept(ne_concept), cc.slice(2, cc.length));
 
                 console.log('test757', ne_var)
                 let name_var = await addTriple(ne_var, ':name', 'name', 'concept');
@@ -1024,7 +1037,7 @@ async function  exec_command(value, top,is_doc=0) { // value: "b :arg1 car" , to
                 console.log(err_logger)
                 err_logger.innerHTML = "<span>" + 'In <i>add</i> command, ' + cc[0] + ' is not last_command defined variable.' + "</span>"
                 console.log('In <i>add</i> command, ' + cc[0] + ' is not last_command defined variable.');
-            } else if (cc.length == 2) {
+            } else if (cc.length === 2) {
                 console.log('In <i>add</i> command, there must be at least 3 arguments.');
             } else {
                 console.log('Unrecognized <i>add</i> command.');
@@ -1056,6 +1069,11 @@ async function  exec_command(value, top,is_doc=0) { // value: "b :arg1 car" , to
             }
         }
     }
+    let lemmatization_box = document.getElementById("lemmatization_box")
+    lemmatization_box.value ='';
+    lemmatization_box.style.display = 'none';
+
+
 }
 
 
@@ -1412,8 +1430,7 @@ function newVar(concept) {
 //
 //}
 
-
-async function index2concept(concept) {
+async function index2concept_lemma(concept) {
     let rawtext = document.getElementsByClassName('raw_text')[0];
     let sense = '';
 
@@ -1421,6 +1438,8 @@ async function index2concept(concept) {
     if (concept.match(/.*?(-\d+)/)) {
         sense = concept.match(/.*?(-\d+)/)[1];
     }
+
+
     concept = concept.replace(sense, '');
     console.log('tets1197', concept);
 
@@ -1466,8 +1485,9 @@ async function index2concept(concept) {
     concept = text2num(concept);
 
     // ✅ 返回最终 concept（带 processConcept 处理）
+    let lang;
     if (sense !== '') {
-        let lang = language;
+        lang = language;
         let result = await processConcept(concept, lang, sense);
         console.log("testing processconcept", result);
         return result + '';
@@ -1477,12 +1497,85 @@ async function index2concept(concept) {
 }
 
 
+
+
+async function index2concept(concept) {
+    let rawtext = document.getElementsByClassName('raw_text')[0];
+    let sense = '';
+
+    // 提取 sense（如果有）
+    if (concept.match(/.*?(-\d+)/)) {
+        sense = concept.match(/.*?(-\d+)/)[1];
+    }
+
+    if(strip(document.getElementById("lemmatization_box").value)!==''){
+        concept = document.getElementById("lemmatization_box").value.trim()
+
+    }else{
+    concept = concept.replace(sense, '');
+    console.log('tets1197', concept);
+
+    // 多个 token 的组合（x1_x2 这类）
+    if (concept.split('_').length - 1 > 0) {
+        let index_list = concept.split('_');
+        let target = '';
+        let previous = '';
+
+        for (let i = 0; i < index_list.length - 1; i++) {
+            if (index_list[i].includes('x')) {
+                let index_len = index_list[i].match(/x(\d+)/)[1].length;
+                let liText = rawtext.getElementsByTagName('li')[index_list[i].replace('x', '') - 1].innerText;
+                let newconcept = liText.substring(0, liText.length - index_len);
+
+                if (index_list[i + 1].includes('x')) {
+                    target += newconcept;
+                } else {
+                    previous = newconcept;
+                }
+            } else {
+                target += previous[index_list[i] - 1];
+            }
+        }
+
+        if (index_list[index_list.length - 1].includes('x')) {
+            let index_len = index_list[index_list.length - 1].match(/x(\d+)/)[1].length;
+            let liText = rawtext.getElementsByTagName('li')[index_list.slice(-1)[0].replace('x', '') - 1].innerText;
+            target += '-' + liText.substring(0, liText.length - index_len);
+        } else {
+            target += previous[index_list[index_list.length - 1] - 1];
+        }
+
+        concept = target;
+    } else if (concept.includes(':')) {
+        // leave concept unchanged
+    } else {
+        let index_len = concept.match(/x(\d+)/)[1].length;
+        let liText = rawtext.getElementsByTagName('li')[concept.replace('x', "") - 1].innerText;
+        concept = liText.substring(0, liText.length - index_len);
+    }
+
+    concept = text2num(concept);}
+
+    // ✅ 返回最终 concept（带 processConcept 处理）
+    let lang;
+    if (sense !== '') {
+        lang = language;
+        let result = await processConcept(concept, lang, sense);
+        console.log("testing processconcept", result);
+        return result + '';
+    } else {
+        return concept + '';
+    }
+
+}
+
+
 async function processConcept(concept, lang, sense) {
     if (lang === 'arabic') {
         // 异步分支返回Promise
         return conceptDropdown(concept, lang)
             .then(frame_info => {
-                const raw_concept = processSenses(frame_info, sense);
+                const raw_concept = processSenses(frame_info, concept, sense);
                 console.log("testing raw_concept",raw_concept);
 //                const reversed = raw_concept.replace(/([\u0600-\u06FF]+)-(\d+)/, "$2-$1");
                  const reversed =   raw_concept.replace(
@@ -1496,13 +1589,15 @@ async function processConcept(concept, lang, sense) {
     } else {
         // 同步分支用Promise.resolve包装
         const senses = conceptDropdown(concept, lang);
-        return Promise.resolve(processSenses(senses, sense));
+        return Promise.resolve(processSenses(senses, concept, sense));
     }
 }
-function processSenses(senses, sense){
+function processSenses(senses, concept, sense){
+        console.log('senses and sense', senses, sense)
        for(let i=0;i<senses['res'].length;i++){
             // for (let key in senses['res'][i]){
             //
+           console.log(senses['res'][i]['name'])
                 if (senses['res'][i]['name'].includes(sense)){
 
                     concept=senses['res'][i]['name']
@@ -1525,7 +1620,7 @@ function processSenses(senses, sense){
  async function newUMR(concept,index='',lang='english') {
     console.log(concept, 'i am testing newumr')
     let v = newVar(concept); // string initial  //change ac to index
-    if(index!=''){ //if  ac, use index instead
+    if(index!==''){ //if  ac, use index instead
         let sen_index = document.getElementById('curr_shown_sent_id').innerText;
         // if ac works as top. then 'ac1_x2_x3'
         console.log('test1298',v)
@@ -1773,6 +1868,7 @@ async function addTriple(head, role, arg, arg_type, index='',doc=0) {
         recordConcept(arg_concept, new_loc); // add to concepts dictionary
         variable2concept[arg_variable] = arg_concept; // add to variable2concept dictionary
         state_has_changed_p = 1; //it turns to 1 when a triple is added, it is set to 0 after execute commanded is finished todo:can be used to tell if command is executed completely
+
         if (role.match(/^:op(-\d|0|\d+\.\d)/)) {
 
             renorm_ops(head); //in umr, reorder :op5, :op8, :op6 to :op1, :op2, :op3
@@ -3210,7 +3306,7 @@ function UMR2db() {
         }
     }
 
-    fetch(`/UMRWriter/sentlevel/${doc_sent_id}`, {
+    fetch(`/UMRWriter/sentlevel_typing/${doc_sent_id}`, {
         method: 'POST',
         body: JSON.stringify({"amr": annot_str, "align": alignments2save, "snt_id": snt_id, "umr": umr})
     }).then(function (response) {
@@ -3387,7 +3483,7 @@ let status = true;
 
 window.onload=function(){
     check_command();
-    // submit_command();
+    window.lemmatizationFocused = false;
     // window.scrollTo({top:})
     location.hash="locate_page" // when redirecting to the new page, fxied the scroll bar to the center of the page.
     // the annotator doesn't need to scroll up or down to find the annotation area
@@ -3417,6 +3513,7 @@ window.onload=function(){
     console.log('test2953',sent)
      let wordcount=  sent.getElementsByTagName('tr')[0].cells.length // the length of the current sentence
      let rawtext=document.createElement('ul') //
+
     /*
     // the raw text    ul；raw_text
                             - li： token  // each word of the raw text
@@ -3547,6 +3644,9 @@ function set_load_visible(command_id){  // show the load text field, user can co
     load_widget.style.display = 'inline';
   } else {
     load_widget.style.display = 'none';
+    if(command_id==="lemmatization_box"){
+        load_widget.value="";
+    }
   }
 
 
@@ -3751,6 +3851,8 @@ function check_command(){
                     submit_command(current.id)
 
                     current.value=''
+                    // document.getElementById("lemmatization_box").value='';
+
                 // }
             }
 
@@ -3763,70 +3865,76 @@ function check_command(){
 
 }
 
-//
-
-//function onInputHandler(event,lang) {
-//    let command_value= event.target.value
-//
-//    let senses='';
-//    if (command_value) {
-//        let value = strip(command_value);
-//        value = value.replace(/^([a-z]\d*)\s+;([a-zA-Z].*)/, "$1 :$2"); // b ;arg0 boy ->  b :arg0 boy
-//        let cc;
-//
-//        cc=argSplit(command_value)
-//        let concept_token=cc.slice(-1)[0]
-//        let  concept=index2concept(concept_token)
-//        if (concept_token.match(/x\d+/)){
-//            senses= await conceptDropdown(concept,lang)
-//            console.log('3254',senses)
-//
-//    }   else{
-//            senses=await conceptDropdown(concept_token,lang)
-//            console.log('3258',senses)
-//        }
-//    }
-//    console.log('test 3246', senses)
-//    // console.log(JSON.parse(senses))
-//    document.getElementById('frame_display').innerHTML=syntaxHighlight(senses['res'],undefined,4)
-//    console.log(syntaxHighlight(senses['res']))
-//    // $('#frame_display').html(syntaxHighlight(senses['res']))
-//}
 
 async function onInputHandler(event, lang) {
     try {
-        let command_value = event.target.value;
-        let senses = null;  // 初始化senses
 
-        if (command_value) {
+
+        let lemmatization_box = document.getElementById("lemmatization_box");
+        let lemmatization_value = lemmatization_box.value;
+        // let senses = null;  // 初始化senses
+        console.log(lemmatizationFocused,"focused")
+        if (lemmatizationFocused && lemmatization_value.trim()!==""){
+           let senses = Promise.resolve(conceptDropdown(lemmatization_value.trim(), lang));
+
+            console.log("lemmatization_box");
+                    if (senses && senses.res) {
+                        print(senses.res);
+            document.getElementById('frame_display').innerHTML =  syntaxHighlight(senses.res, undefined, 4);
+            console.log(syntaxHighlight(senses.res),'sense 3826');
+        } else {
+            document.getElementById('frame_display').innerHTML = "No valid result.";
+        }
+        }
+        else if (event.target.value&&event.target !==lemmatization_box) {
+            let concept;
+            let senses;
+            console.log("normal_box")
+            let command_value = strip(event.target.value);
             let value = strip(command_value);
+
+
             value = value.replace(/^([a-z]\d*)\s+;([a-zA-Z].*)/, "$1 :$2");
             let cc = argSplit(command_value);
             let concept_token = cc.slice(-1)[0];
-            let concept = await index2concept(concept_token);
+            console.log("concept tijen", concept_token);
 
+
+
+             concept =await  index2concept_lemma(concept_token);
+            console.log("the concept is ", concept)
             // 使用await等待异步结果
             if (concept_token.match(/x\d+/)) {
-                senses = conceptDropdown(concept, lang);
-                console.log('3254', senses);
+              let   senses = conceptDropdown(concept, lang);
+                console.log('3254', senses,concept, concept_token);
             } else {
-                senses = conceptDropdown(concept_token, lang);
+               let  senses = conceptDropdown(concept_token, lang);
                 console.log('3258', senses);
             }
+                    if (senses && senses.res) {
+                        print(senses.res);
+            document.getElementById('frame_display').innerHTML =  syntaxHighlight(senses.res, undefined, 4);
+            console.log(syntaxHighlight(senses.res),'sense 3826');
+        } else {
+            document.getElementById('frame_display').innerHTML = "No valid result.";
+        }
         }
 
-        console.log('test 3246', senses);
+
+
+
+        // console.log('test 3246', senses);
 
         // 确保senses存在且有res属性
-        if (senses && senses.res) {
-            document.getElementById('frame_display').innerHTML = syntaxHighlight(senses.res, undefined, 4);
-            console.log(syntaxHighlight(senses.res));
-        } else {
-            document.getElementById('frame_display').innerHTML = "无有效结果";
-        }
+        // if (senses && senses.res) {
+        //     document.getElementById('frame_display').innerHTML = syntaxHighlight(senses.res, undefined, 4);
+        //     console.log(syntaxHighlight(senses.res),'sense 3826');
+        // } else {
+        //     document.getElementById('frame_display').innerHTML = "No valid result.";
+        // }
     } catch (error) {
-        console.error('处理输入时出错:', error);
-        document.getElementById('frame_display').innerHTML = `错误: ${error.message}`;
+        console.error('Error happened while handling input:', error);
+        document.getElementById('frame_display').innerHTML = `Error: ${error.message}`;
     }
 }
 
