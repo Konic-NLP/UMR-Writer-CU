@@ -143,7 +143,7 @@ def html(content_string: str, file_format: str, lang:str) -> 'InfoToDisplay':
     sents = []
     sents_html = ''
     if file_format == 'plain_text' or file_format == 'exported_file' or file_format== 'isi_editor': # split content string into List[List[str]]
-        sents = [(['Sentence:'] + sent.split()) for sent in content_string.strip().split('\n')]
+        sents = [['Sentence:'] + re.sub(r'(\S)([\.!?؟…])$', r'\1 \2', sent).split() for sent in content_string.strip().split('\n') if sent.strip()]
         sents_df = pd.DataFrame(content_string.strip().split('\n'))
         sents_df.index = sents_df.index + 1
         sents_html = sents_df.to_html(header=False, classes="table table-striped table-sm", justify=justify)
